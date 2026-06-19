@@ -935,8 +935,8 @@ const ALL_QUESTIONS = [
     options: [
       { text: 'Эрика', correct: false },
       { text: 'Vultura', correct: false },
-      { text: 'Режина', correct: false },
-      { text: 'каенжел', correct: true },
+      { text: 'Режина', correct: true },
+      { text: 'каенжел', correct: false },
     ]
   },
 ];
@@ -1002,7 +1002,7 @@ function launchFireworks(){
 
   // 2 волны взрывов — первая сразу, вторая через 500мс
   function fireWave(delay){
-    const bursts = 8; // было 4, теперь 8
+    const bursts = 6; // было 4, теперь 8
     for(let b = 0; b < bursts; b++){
       setTimeout(()=>{
         if(!fireworksLayer) return;
@@ -1018,7 +1018,7 @@ function launchFireworks(){
         fireworksLayer.appendChild(flash);
         setTimeout(()=>flash.remove(), 700);
 
-        const particleCount = 32; // было 18, теперь 32
+        const particleCount = 24; // было 18, теперь 32
         for(let i = 0; i < particleCount; i++){
           const angle = (Math.PI * 2 * i / particleCount) + (Math.random() * 0.25);
           const dist = 70 + Math.random() * 100; // чуть дальше разлетаются
@@ -1036,7 +1036,7 @@ function launchFireworks(){
           fireworksLayer.appendChild(p);
           setTimeout(()=>p.remove(), 950);
         }
-      }, delay + b * 200); // было 350мс между взрывами, теперь 200мс — быстрее и плотнее
+      }, delay + b *275); // было 350мс между взрывами, теперь 200мс — быстрее и плотнее
     }
   }
 
