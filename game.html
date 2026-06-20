@@ -821,7 +821,7 @@ body{
         <div class="mc-check"><svg viewBox="0 0 12 12"><path d="M1 6l4 4 6-7"/></svg></div>
         <div class="mc-info">
           <div class="mc-name">Viperr Tatu</div>
-          <div class="mc-tag">вайперрята тату</div>
+          <div class="mc-tag">Скин с тату</div>
         </div>
       </div>
     </div>
@@ -1063,8 +1063,8 @@ const ALL_QUESTIONS = [
     options: [
       { text: 'Эрика', correct: false },
       { text: 'Vultura', correct: false },
-      { text: 'Режина', correct: true },
-      { text: 'каенжел', correct: false },
+      { text: 'Режина', correct: false },
+      { text: 'каенжел', correct: true },
     ]
   },
 ];
@@ -1238,8 +1238,7 @@ function startGameFromSelect() {
   song.src = TRACK_SRC[selectedTrack] || TRACK_SRC.n1chevo;
   GAME_DURATION = 90;
   QUIZZES = buildQuizzes();
-  song.load();
-  // Now trigger the game start directly
+
   stage.classList.remove('blurred');
   gameRunning = true;
   energy = 100;
@@ -1257,9 +1256,15 @@ function startGameFromSelect() {
   document.getElementById('quiz-bonus-text').style.display = 'none';
   if(fireworksLayer) fireworksLayer.innerHTML = '';
 
-  song.currentTime = 0;
   song.volume = 1;
-  song.play().catch(()=>{});
+
+  function startAudio() {
+    song.currentTime = 0;
+    song.play().catch(()=>{});
+    song.removeEventListener('canplay', startAudio);
+  }
+  song.addEventListener('canplay', startAudio);
+  song.load();
 
   tickInterval = setInterval(gameTick, 200);
 }
