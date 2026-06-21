@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+<script src="protect.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Viperr Mini Game</title>
@@ -347,125 +348,21 @@ footer{
   letter-spacing:0.18em;color:var(--t3);text-transform:uppercase;
 }
 
-/* ====== BOTTOM NAV ====== */
-body{padding-bottom:74px;}
-.bottom-nav{
-  position:fixed;left:0;right:0;bottom:0;z-index:80;
-  display:flex;
-  background:rgba(10,10,16,0.92);
-  backdrop-filter:blur(16px);
-  border-top:1px solid var(--line2);
-  padding:6px 10px calc(8px + env(safe-area-inset-bottom));
+/* ====== UCHIP COINS ====== */
+.ucoins{
+  display:flex;align-items:center;gap:4px;
+  font-family:'Space Mono',monospace;font-size:12px;font-weight:700;
+  color:#e8b94a;white-space:nowrap;
+  padding-right:9px;margin-right:1px;
+  border-right:1px solid var(--line2);
 }
-.bn-item{
-  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
-  background:none;border:none;cursor:pointer;
-  padding:8px 4px 6px;border-radius:12px;
-  color:var(--t3);transition:color 0.2s;
+.ucoins .uc-icon{
+  display:inline-block;width:15px;height:15px;border-radius:50%;flex-shrink:0;
+  background:radial-gradient(circle at 32% 28%, #fff7d8 0%, #ffe89a 14%, #ffd866 32%, #e8b94a 55%, #c4912a 78%, #9a6e1c 100%);
+  border:1px solid #fff1bd;
+  box-shadow:0 0 6px rgba(255,200,80,0.45);
 }
-.bn-item svg{width:21px;height:21px;}
-.bn-item span{font-size:10px;font-weight:600;letter-spacing:0.04em;}
-.bn-item.active{color:var(--accent);}
-.bn-item.active svg{filter:drop-shadow(0 0 8px rgba(224,68,68,0.5));}
-.bn-dot{width:4px;height:4px;border-radius:50%;background:var(--accent);margin-top:-1px;opacity:0;transition:opacity .2s;}
-.bn-item.active .bn-dot{opacity:1;}
-
-/* ====== PROFILE PAGE ====== */
-#page-profile{display:none;}
-.profile-hero{
-  display:flex;flex-direction:column;align-items:center;
-  padding:34px 0 18px;text-align:center;
-}
-.profile-av{
-  width:84px;height:84px;border-radius:50%;
-  background:linear-gradient(135deg,var(--red),var(--accent));
-  border:3px solid rgba(224,68,68,0.4);
-  box-shadow:0 0 26px rgba(192,57,43,0.4);
-  display:flex;align-items:center;justify-content:center;
-  font-size:32px;font-weight:800;color:#fff;overflow:hidden;
-  margin-bottom:14px;
-}
-.profile-av img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
-.profile-name{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:0.06em;color:#fff;}
-.profile-handle{font-family:'Space Mono',monospace;font-size:11px;color:var(--t3);letter-spacing:0.08em;margin-top:2px;}
-
-.nick-card{
-  background:var(--s1);border:1px solid var(--line2);border-radius:14px;
-  padding:16px 18px;margin-bottom:10px;
-  display:flex;align-items:center;justify-content:space-between;gap:10px;
-}
-.nick-label{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.22em;color:var(--t3);text-transform:uppercase;margin-bottom:5px;}
-.nick-val{font-size:15px;font-weight:700;color:var(--t1);}
-.nick-soon{
-  font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.1em;
-  color:var(--t3);text-transform:uppercase;border:1px solid var(--line2);
-  border-radius:20px;padding:4px 10px;white-space:nowrap;flex-shrink:0;
-}
-
-.time-card-full{
-  background:linear-gradient(135deg,var(--s1) 0%,var(--s2) 100%);
-  border:1px solid rgba(192,57,43,0.2);border-radius:14px;
-  padding:20px 22px;margin-bottom:10px;position:relative;overflow:hidden;
-}
-.time-card-full::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:2px;
-  background:linear-gradient(90deg,transparent,var(--red),transparent);
-}
-.time-hms{display:flex;gap:14px;margin-top:10px;}
-.time-hms-block{flex:1;text-align:center;background:rgba(255,255,255,0.03);border:1px solid var(--line);border-radius:10px;padding:10px 4px;}
-.time-hms-num{font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:var(--t1);}
-.time-hms-lbl{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.16em;color:var(--t3);text-transform:uppercase;margin-top:2px;}
-
-/* Coin card */
-.coin-card{
-  background:linear-gradient(135deg,var(--s1) 0%,var(--s2) 100%);
-  border:1px solid rgba(224,180,80,0.22);border-radius:16px;
-  padding:24px 18px 20px;margin-bottom:10px;
-  display:flex;flex-direction:column;align-items:center;gap:6px;
-  position:relative;overflow:hidden;
-}
-.coin-card::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:2px;
-  background:linear-gradient(90deg,transparent,#e0b450,transparent);
-}
-.coin-glow-bg{
-  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  width:220px;height:220px;
-  background:radial-gradient(circle,rgba(255,216,102,0.16) 0%,transparent 70%);
-  pointer-events:none;filter:blur(10px);
-}
-.coin-perspective{perspective:900px;width:128px;height:128px;margin:6px 0 4px;position:relative;z-index:2;}
-.coin-3d{width:100%;height:100%;position:relative;transform-style:preserve-3d;animation:coinspin 6.5s linear infinite;}
-.coin-face{
-  position:absolute;inset:0;border-radius:50%;backface-visibility:hidden;
-  display:flex;align-items:center;justify-content:center;flex-direction:column;
-  background:
-    radial-gradient(circle at 32% 28%, #fff7d8 0%, #ffe89a 14%, #ffd866 32%, #e8b94a 55%, #c4912a 78%, #9a6e1c 100%);
-  border:4px solid #fff1bd;
-  box-shadow:
-    0 0 24px rgba(255,200,80,0.45),
-    inset 0 0 0 3px rgba(154,110,28,0.35),
-    inset 0 10px 18px rgba(255,255,255,0.45),
-    inset 0 -14px 22px rgba(120,80,10,0.45);
-}
-.coin-face::before{
-  content:'';position:absolute;inset:7px;border-radius:50%;
-  border:1.5px dashed rgba(154,110,28,0.4);
-}
-.coin-back{transform:rotateY(180deg);}
-.coin-text{
-  font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:0.06em;
-  color:#7a5310;text-shadow:0 1px 0 rgba(255,255,255,0.55),0 -1px 1px rgba(90,60,5,0.4);
-  line-height:1;
-}
-.coin-sub{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:0.2em;color:#8a6418;margin-top:3px;text-transform:uppercase;}
-@keyframes coinspin{0%{transform:rotateY(0deg);}100%{transform:rotateY(360deg);}}
-
-.coin-balance{font-family:'Bebas Neue',sans-serif;font-size:34px;color:#fff;letter-spacing:0.04em;position:relative;z-index:2;}
-.coin-balance span{color:#e8b94a;font-size:18px;margin-left:4px;}
-.coin-balance-lbl{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.2em;color:var(--t3);text-transform:uppercase;position:relative;z-index:2;}
-.coin-hint{font-size:11px;color:var(--t2);text-align:center;margin-top:10px;line-height:1.5;position:relative;z-index:2;max-width:280px;}
-.coin-hint b{color:#e8b94a;}
+.ucoins span{color:var(--t3);font-weight:400;font-size:10px;}
 </style>
 </head>
 <body>
@@ -493,6 +390,7 @@ body{padding-bottom:74px;}
   <div class="hdr">
     <div class="logo">Viperr <em>Mini</em></div>
     <div class="uchip" id="uchip" style="display:none">
+      <div class="ucoins" id="ucoins"><span class="uc-icon"></span>0<span>VMG</span></div>
       <div class="uname" id="uname"></div>
       <div class="uav" id="uav"></div>
     </div>
@@ -570,69 +468,6 @@ body{padding-bottom:74px;}
 
   </div>
   <!-- /page-home -->
-
-  <!-- PAGE: PROFILE -->
-  <div class="wrap" id="page-profile">
-
-    <div class="profile-hero">
-      <div class="profile-av" id="p-av">?</div>
-      <div class="profile-name" id="p-name">Игрок</div>
-      <div class="profile-handle" id="p-handle"></div>
-    </div>
-
-    <div class="sec-label">Никнейм</div>
-    <div class="nick-card">
-      <div>
-        <div class="nick-label">Текущее имя</div>
-        <div class="nick-val" id="p-nick">—</div>
-      </div>
-      <div class="nick-soon">Смена ника скоро</div>
-    </div>
-
-    <div class="divider"></div>
-
-    <div class="sec-label">Время на сайте</div>
-    <div class="time-card-full">
-      <div class="stat-label-time">⏱ Полное время провождения</div>
-      <div class="time-hms">
-        <div class="time-hms-block"><div class="time-hms-num" id="p-h">0</div><div class="time-hms-lbl">часы</div></div>
-        <div class="time-hms-block"><div class="time-hms-num" id="p-m">00</div><div class="time-hms-lbl">минуты</div></div>
-        <div class="time-hms-block"><div class="time-hms-num" id="p-s">00</div><div class="time-hms-lbl">секунды</div></div>
-      </div>
-    </div>
-
-    <div class="divider"></div>
-
-    <div class="sec-label">VMG Coin</div>
-    <div class="coin-card">
-      <div class="coin-glow-bg"></div>
-      <div class="coin-perspective">
-        <div class="coin-3d">
-          <div class="coin-face coin-front"><div class="coin-text">VMG</div><div class="coin-sub">Viperr Mini Game</div></div>
-          <div class="coin-face coin-back"><div class="coin-text">VMG</div><div class="coin-sub">Viperr Mini Game</div></div>
-        </div>
-      </div>
-      <div class="coin-balance" id="p-coins">0<span>VMG</span></div>
-      <div class="coin-balance-lbl">Баланс монет</div>
-      <div class="coin-hint">Набери <b>5/5</b> в игре «Концерт Viperr», и тебе начислится <b>+1 VMG Coin</b></div>
-    </div>
-
-  </div>
-  <!-- /page-profile -->
-
-  <!-- BOTTOM NAV -->
-  <nav class="bottom-nav">
-    <button class="bn-item active" data-page="home" id="nav-home">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>
-      <span>Главная</span>
-      <div class="bn-dot"></div>
-    </button>
-    <button class="bn-item" data-page="profile" id="nav-profile">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
-      <span>Профиль</span>
-      <div class="bn-dot"></div>
-    </button>
-  </nav>
 
   <footer>
     <div class="footer-logo">Viperr Mini <span>Game</span></div>
@@ -790,45 +625,10 @@ function renderTime(prog) {
   document.getElementById('s-time').textContent = fmtMin(prog.totalSec);
 }
 
-function renderProfile(u, prog, coins) {
-  // header
-  document.getElementById('p-name').textContent = u.name || 'Игрок';
-  document.getElementById('p-handle').textContent = u.handle ? '@' + u.handle : '';
-  document.getElementById('p-nick').textContent = u.handle ? '@' + u.handle : (u.name || '—');
-  const av = document.getElementById('p-av');
-  if (u.photo) {
-    av.innerHTML = `<img src="${u.photo}" alt="" onerror="this.parentElement.textContent='${(u.name||'?')[0].toUpperCase()}'">`;
-  } else {
-    av.textContent = (u.name || '?')[0].toUpperCase();
-  }
-  // time hh:mm:ss
-  const total = Math.floor(prog.totalSec || 0);
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  document.getElementById('p-h').textContent = h;
-  document.getElementById('p-m').textContent = String(m).padStart(2, '0');
-  document.getElementById('p-s').textContent = String(s).padStart(2, '0');
-  // coins
-  document.getElementById('p-coins').innerHTML = `${coins}<span>VMG</span>`;
+function renderCoinsChip(coins) {
+  const el = document.getElementById('ucoins');
+  if (el) el.innerHTML = `<span class="uc-icon"></span>${coins}<span>VMG</span>`;
 }
-
-// ── Bottom nav tab switching ──
-(function () {
-  const homeBtn = document.getElementById('nav-home');
-  const profBtn = document.getElementById('nav-profile');
-  const homePage = document.getElementById('page-home');
-  const profPage = document.getElementById('page-profile');
-  function go(page) {
-    homeBtn.classList.toggle('active', page === 'home');
-    profBtn.classList.toggle('active', page === 'profile');
-    homePage.style.display = page === 'home' ? '' : 'none';
-    profPage.style.display = page === 'profile' ? '' : 'none';
-    window.scrollTo(0, 0);
-  }
-  homeBtn.addEventListener('click', () => go('home'));
-  profBtn.addEventListener('click', () => go('profile'));
-})();
 
 // ── Init ──
 (function () {
@@ -840,7 +640,7 @@ function renderProfile(u, prog, coins) {
     saveProgress(user.id, prog);
     upsertLB(user, prog);
     renderTime(prog);
-    renderProfile(user, prog, loadCoins(user.id));
+    renderCoinsChip(loadCoins(user.id));
 
     // tick every second for a live, precise counter
     setInterval(() => {
@@ -848,7 +648,7 @@ function renderProfile(u, prog, coins) {
       p.totalSec = (p.totalSec || 0) + 1;
       saveProgress(user.id, p);
       renderTime(p);
-      renderProfile(user, p, loadCoins(user.id));
+      renderCoinsChip(loadCoins(user.id));
       // only touch the leaderboard (and re-render the list) once a minute
       if (p.totalSec % 60 === 0) {
         upsertLB(user, p);
