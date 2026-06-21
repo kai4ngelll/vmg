@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Viperr Mini Game</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
@@ -665,6 +666,16 @@ const SK    = 'viperr_v4';       // time progress (seconds)
 const LSK   = 'viperr_lb3';      // leaderboard
 const USK   = 'viperr_user';     // persistent user key
 const CSK   = 'viperr_coins_v1'; // coin balances
+
+// ── Telegram WebApp init ──
+if (window.Telegram?.WebApp) {
+  const tg = window.Telegram.WebApp;
+  tg.ready();
+  tg.expand();
+  try { tg.disableVerticalSwipes(); } catch {}
+  try { tg.setHeaderColor('#07070c'); } catch {}
+  try { tg.setBackgroundColor('#07070c'); } catch {}
+}
 
 // ── Persistent user: try TG first, then saved, then URL params ──
 function getUser() {
