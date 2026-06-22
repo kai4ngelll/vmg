@@ -82,6 +82,51 @@ body{background:var(--bg);color:var(--t1);font-family:'Inter',sans-serif;min-hei
 #main{min-height:100vh;display:flex;flex-direction:column;opacity:0;transition:opacity 0.7s 0.1s;}
 #main.show{opacity:1;}
 
+/* ====== REGISTRATION MODAL ====== */
+#reg-modal{
+  position:fixed;inset:0;z-index:400;
+  background:rgba(7,7,12,0.92);
+  display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(8px);
+}
+#reg-modal.hidden{display:none;}
+.reg-box{
+  background:var(--s1);border:1px solid rgba(192,57,43,0.3);
+  border-radius:16px;padding:32px 28px;width:min(340px,90vw);
+  position:relative;
+}
+.reg-box::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--red),transparent);
+  border-radius:16px 16px 0 0;
+}
+.reg-title{
+  font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:0.1em;
+  color:#fff;margin-bottom:6px;
+}
+.reg-title span{color:var(--accent);}
+.reg-sub{font-size:11px;color:var(--t3);letter-spacing:0.04em;margin-bottom:22px;line-height:1.5;}
+.reg-field{
+  display:flex;flex-direction:column;gap:6px;margin-bottom:16px;
+}
+.reg-field label{font-size:10px;font-weight:700;letter-spacing:0.2em;color:var(--t3);text-transform:uppercase;font-family:'Space Mono',monospace;}
+.reg-field input{
+  background:var(--s2);border:1px solid var(--line2);border-radius:8px;
+  padding:10px 14px;color:var(--t1);font-size:14px;font-family:'Inter',sans-serif;
+  outline:none;transition:border-color 0.2s;
+}
+.reg-field input:focus{border-color:rgba(192,57,43,0.5);}
+.reg-field input::placeholder{color:var(--t3);}
+.reg-btn{
+  width:100%;padding:12px;border-radius:8px;border:none;
+  background:linear-gradient(135deg,var(--red),var(--accent));
+  color:#fff;font-size:14px;font-weight:700;letter-spacing:0.08em;
+  font-family:'Space Mono',monospace;cursor:pointer;transition:opacity 0.2s;
+  margin-top:6px;
+}
+.reg-btn:hover{opacity:0.85;}
+.reg-err{font-size:11px;color:var(--accent);margin-top:8px;display:none;}
+
 /* Ticker */
 .ticker{width:100%;background:var(--s1);border-bottom:1px solid var(--line);padding:6px 0;overflow:hidden;position:relative;}
 .ticker::before,.ticker::after{content:'';position:absolute;top:0;bottom:0;width:48px;z-index:2;}
@@ -367,6 +412,24 @@ footer{
 </head>
 <body>
 
+<!-- REGISTRATION MODAL (shown only when user is not identified by Telegram) -->
+<div id="reg-modal" class="hidden">
+  <div class="reg-box">
+    <div class="reg-title">Viperr <span>Mini</span></div>
+    <div class="reg-sub">Введи своё имя, чтобы попасть в таблицу лидеров</div>
+    <div class="reg-field">
+      <label>Имя</label>
+      <input id="reg-name" type="text" placeholder="Например: Viper" maxlength="24" autocomplete="off">
+    </div>
+    <div class="reg-field">
+      <label>Username (необязательно)</label>
+      <input id="reg-handle" type="text" placeholder="@nickname" maxlength="32" autocomplete="off">
+    </div>
+    <button class="reg-btn" onclick="doRegister()">Войти</button>
+    <div class="reg-err" id="reg-err">Введи имя, чтобы продолжить</div>
+  </div>
+</div>
+
 <!-- LOADER -->
 <div id="loader">
   <div class="loader-logo">Viperr Mini<br><span class="red">Game</span></div>
@@ -546,7 +609,26 @@ function getUser() {
     if (saved) return JSON.parse(saved);
   } catch {}
 
-  return null;
+  return null; // will trigger registration modal
+}
+
+function doRegister() {
+  const nameEl = document.getElementById('reg-name');
+  const handleEl = document.getElementById('reg-handle');
+  const errEl = document.getElementById('reg-err');
+  const name = nameEl.value.trim();
+  if (!name) { errEl.style.display = 'block'; return; }
+  errEl.style.display = 'none';
+  let handle = handleEl.value.trim().replace(/^@/, '');
+  const user = {
+    id: 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2,8),
+    name,
+    handle,
+    photo: ''
+  };
+  localStorage.setItem(USK, JSON.stringify(user));
+  document.getElementById('reg-modal').classList.add('hidden');
+  startApp(user);
 }
 
 // ── Time progress (stored in whole seconds) ──
@@ -571,23 +653,47 @@ function loadCoins(uid) {
   try { const all = JSON.parse(localStorage.getItem(CSK) || '{}'); return all[uid] || 0; } catch { return 0; }
 }
 
-// ── Leaderboard ──
-function loadLB() { try { return JSON.parse(localStorage.getItem(LSK) || '[]'); } catch { return []; } }
-function saveLB(rows) { try { localStorage.setItem(LSK, JSON.stringify(rows)); } catch {} }
+// ── Leaderboard (shared storage across all users) ──
+const LB_SHARED_KEY = 'viperr_leaderboard_v1';
 
-function upsertLB(user, prog) {
-  let lb = loadLB();
+// Internal cache so we don't spam storage
+let _lbCache = null;
+let _lbCacheDirty = false;
+
+async function loadLBShared() {
+  try {
+    const res = await window.storage.get(LB_SHARED_KEY, true);
+    _lbCache = res ? JSON.parse(res.value) : [];
+  } catch {
+    _lbCache = _lbCache || [];
+  }
+  return _lbCache;
+}
+
+async function saveLBShared(rows) {
+  _lbCache = rows;
+  try {
+    await window.storage.set(LB_SHARED_KEY, JSON.stringify(rows), true);
+  } catch (e) {
+    console.warn('Shared LB save failed, falling back to localStorage', e);
+    try { localStorage.setItem(LSK, JSON.stringify(rows)); } catch {}
+  }
+}
+
+async function upsertLB(user, prog) {
+  let lb = await loadLBShared();
   const idx = lb.findIndex(r => r.id === user.id);
   const totalMin = Math.floor((prog.totalSec || 0) / 60);
   const entry = { id: user.id, name: user.name, handle: user.handle, photo: user.photo, totalMin };
   if (idx >= 0) lb[idx] = entry; else lb.push(entry);
   lb.sort((a, b) => b.totalMin - a.totalMin);
-  saveLB(lb.slice(0, 20));
+  await saveLBShared(lb.slice(0, 50));
 }
 
-function renderLB(currentId) {
-  const lb = loadLB();
+async function renderLB(currentId) {
   const el = document.getElementById('lb-body');
+  el.innerHTML = '<div class="lb-empty">Загрузка...</div>';
+  const lb = await loadLBShared();
   if (!lb.length) { el.innerHTML = '<div class="lb-empty">Пока нет данных — будь первым</div>'; return; }
   el.innerHTML = lb.slice(0, 10).map((r, i) => {
     const isMe = r.id === currentId;
@@ -630,33 +736,42 @@ function renderCoinsChip(coins) {
   if (el) el.innerHTML = `<span class="uc-icon"></span>${coins}<span>VMG</span>`;
 }
 
-// ── Init ──
-(function () {
-  const user = getUser();
-  if (user) {
-    renderChip(user);
-    const prog = loadProgress(user.id);
-    prog.lastSeen = Date.now();
-    saveProgress(user.id, prog);
-    upsertLB(user, prog);
-    renderTime(prog);
-    renderCoinsChip(loadCoins(user.id));
+// ── App start ──
+async function startApp(user) {
+  if (!user) return;
+  renderChip(user);
+  const prog = loadProgress(user.id);
+  prog.lastSeen = Date.now();
+  saveProgress(user.id, prog);
+  await upsertLB(user, prog);
+  renderTime(prog);
+  renderCoinsChip(loadCoins(user.id));
 
-    // tick every second for a live, precise counter
-    setInterval(() => {
-      const p = loadProgress(user.id);
-      p.totalSec = (p.totalSec || 0) + 1;
-      saveProgress(user.id, p);
-      renderTime(p);
-      renderCoinsChip(loadCoins(user.id));
-      // only touch the leaderboard (and re-render the list) once a minute
-      if (p.totalSec % 60 === 0) {
-        upsertLB(user, p);
-        renderLB(user.id);
-      }
-    }, 1000);
+  // tick every second for a live, precise counter
+  setInterval(async () => {
+    const p = loadProgress(user.id);
+    p.totalSec = (p.totalSec || 0) + 1;
+    saveProgress(user.id, p);
+    renderTime(p);
+    renderCoinsChip(loadCoins(user.id));
+    // push to shared LB and re-render once per minute
+    if (p.totalSec % 60 === 0) {
+      await upsertLB(user, p);
+      await renderLB(user.id);
+    }
+  }, 1000);
+}
+
+// ── Init ──
+(async function () {
+  const user = getUser();
+  await renderLB(user?.id);   // show shared LB immediately (even before login)
+  if (user) {
+    await startApp(user);
+  } else {
+    // No Telegram identity & no saved user — show registration
+    document.getElementById('reg-modal').classList.remove('hidden');
   }
-  renderLB(user?.id);
 })();
 </script>
 </body>
