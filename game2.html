@@ -362,7 +362,12 @@ function beginRound(){
   setPlayerPos();
 
   bgm.currentTime = 0; bgm.volume = 0.55;
-  bgm.play().catch(()=>{});
+  const tryPlay = () => bgm.play().catch(()=>{});
+  tryPlay();
+  // Telegram WebApp blocks autoplay — unlock on first touch
+  const unlock = () => { tryPlay(); document.removeEventListener('touchstart', unlock); document.removeEventListener('click', unlock); };
+  document.addEventListener('touchstart', unlock, {once:true});
+  document.addEventListener('click', unlock, {once:true});
 
   clearInterval(tickInt);
   tickInt = setInterval(doTick, 1000);
@@ -406,11 +411,17 @@ function doTick(){
 
 // ─── SPAWN ITEMS ─────────────────────────────────────────────
 // Spawn exactly 10 eggs evenly over 60 seconds
+let eggTimeouts = [];
 function scheduleEggs(){
-  const total = EGG_GOAL; // 10
+  // Cancel any previously scheduled eggs
+  eggTimeouts.forEach(t => clearTimeout(t));
+  eggTimeouts = [];
+  const total = EGG_GOAL; // exactly 10
   for(let i = 0; i < total; i++){
-    const delay = Math.round((i / total) * (TIME_SEC * 1000)) + 1500 + Math.random()*1200;
-    setTimeout(()=>{ if(running) spawnEgg(); }, delay);
+    // Spread evenly: egg 0 at ~2s, egg 9 at ~56s
+    const delay = Math.round((i / (total - 1)) * (TIME_SEC * 1000 - 4000)) + 2000;
+    const t = setTimeout(()=>{ if(running) spawnEgg(); }, delay);
+    eggTimeouts.push(t);
   }
 }
 
@@ -557,16 +568,16 @@ function endGame(win, dead){
         : `Неудача, в следующий раз повезёт.\nПоймано: ${eggs}/10 яиц`);
 
   if(won){
-    // Ключ и структура совпадают с index.html (viperr_coins_v1)
     const CSK = 'viperr_coins_v1';
+    // Get uid: Telegram user id, or guest id (same logic as index.html)
     let uid = null;
     try { uid = window.Telegram?.WebApp?.initDataUnsafe?.user?.id?.toString() || null; } catch{}
-    if(uid){
-      const all = JSON.parse(localStorage.getItem(CSK) || '{}');
-      const cur = Math.min(parseInt(all[uid]) || 0, 9999);
-      all[uid] = cur + 1;
-      localStorage.setItem(CSK, JSON.stringify(all));
-    }
+    if(!uid){ uid = localStorage.getItem('vmg_guest_id'); }
+    if(!uid){ uid = 'guest_' + Math.random().toString(36).slice(2,10); localStorage.setItem('vmg_guest_id', uid); }
+    const all = JSON.parse(localStorage.getItem(CSK) || '{}');
+    const cur = Math.min(parseInt(all[uid]) || 0, 9999);
+    all[uid] = cur + 1;
+    localStorage.setItem(CSK, JSON.stringify(all));
     document.getElementById('res-coin').style.display = 'block';
   } else {
     document.getElementById('res-coin').style.display = 'none';
@@ -583,7 +594,13 @@ document.getElementById('btn-again').addEventListener('click', ()=>{
   scheduleEggs();
 });
 document.getElementById('btn-index').addEventListener('click', ()=>{
-  window.location.href = 'index.html';
+  try {
+    if(window.Telegram?.WebApp?.openLink){
+      window.Telegram.WebApp.openLink(location.origin + location.pathname.replace(/[^/]*$/, 'index.html'));
+    } else {
+      window.location.href = 'index.html';
+    }
+  } catch(e){ window.location.href = 'index.html'; }
 });
 
 function clearItems(){
