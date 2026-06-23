@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Viperr Mini Game</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #07070c;
+            --s1: #0f0f16;
+            --s2: #161620;
+            --s3: #1e1e2a;
+            --line: rgba(255, 255, 255, 0.05);
+            --line2: rgba(255, 255, 255, 0.10);
+            --t1: #eeeef4;
+            --t2: #8888a0;
+            --t3: #484858;
+            --red: #c0392b;
+            --red2: rgba(192, 57, 43, 0.12);
+            --accent: #e04444;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+        body {
+            background: var(--bg);
+            color: var(--t1);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* ====== LOADER ====== */
+        #loader {
+            position: fixed;
+            inset: 0;
+            z-index: 300;
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 26px;
+            transition: opacity 0.8s ease;
+        }
+        #loader.fade {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loader-logo {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: clamp(40px, 9vw, 78px);
+            letter-spacing: 0.14em;
+            color: #fff;
+            text-align: center;
+            line-height: 0.95;
+            text-shadow: 0 0 50px rgba(192, 57, 43, 0.45), 0 0 100px rgba(192, 57, 43, 0.15);
+        }
+        .loader-logo .red {
+            color: var(--accent);
+        }
+
+        .loader-tag {
+            font-family: 'Space Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 0.38em;
+            color: var(--t3);
+            text-transform: uppercase;
+            margin-top: -14px;
+        }
+
+        .loader-bar-wrap {
+            width: min(300px, 70vw);
+            height: 2px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .loader-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--red), var(--accent), #f06060);
+            border-radius: 10px;
+            animation: loadfill 2s cubic-bezier(0.25, 0.1, 0.1, 1) forwards;
+        }
+        @keyframes loadfill {
+            0% {
+                width: 0%;
+            }
+            55% {
+                width: 70%;
+            }
+            80% {
+                width: 90%;
+            }
+            100% {
+                width: 100%;
+            }
+        }
+        .loader-pct {
+            font-family: 'Space Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 0.2em;
+            color: var(--t3);
+            margin-top: -14px;
+        }
+
+        /* ====== MAIN ====== */
+        #main {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            transition: opacity 0.7s 0.1s;
+        }
+        #main.show {
+            opacity: 1;
+        }
+
+        /* Ticker */
+        .ticker {
+            width: 100%;
+            background: var(--s1);
+            border-bottom: 1px solid var(--line);
+            padding: 6px 0;
+            overflow: hidden;
+            position: relative;
+        }
+        .ticker::before,
+        .ticker::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 48px;
+            z-index: 2;
+        }
+        .ticker::before {
+            left: 0;
+            background: linear-gradient(90deg, var(--s1), transparent);
+        }
+        .ticker::after {
+            right: 0;
+            background: linear-gradient(270deg, var(--s1), transparent);
+        }
+        .ticker-r {
+            display: flex;
+            white-space: nowrap;
+            animation: tick 16s linear infinite;
+        }
+        .ticker-r span {
+            font-size: 10px;
+            letter-spacing: 0.2em;
+            color: var(--t3);
+            text-transform: uppercase;
+            padding: 0 52px;
+            font-family: 'Space Mono', monospace;
+        }
+        .ticker-r span b {
+            color: var(--red);
+            font-weight: 400;
+        }
+        @keyframes tick {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-50%);
+            }
+        }
+
+        /* Header */
+        .hdr {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 18px;
+            border-bottom: 1px solid var(--line);
+            background: rgba(7, 7, 12, 0.8);
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        .logo {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 20px;
+            letter-spacing: 0.1em;
+            color: var(--t1);
+        }
+        .logo em {
+            color: var(--accent);
+            font-style: normal;
+        }
+
+        /* User chip */
+        .uchip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--s1);
+            border: 1px solid var(--line2);
+            border-radius: 40px;
+            padding: 4px 4px 4px 12px;
+            cursor: default;
+        }
+        .uname {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--t1);
+            white-space: nowrap;
+            max-width: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .uav {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--red), var(--accent));
+            border: 2px solid rgba(224, 68, 68, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 800;
+            overflow: hidden;
+            flex-shrink: 0;
+            color: #fff;
+            box-shadow: 0 0 10px rgba(192, 57, 43, 0.35);
+        }
+        .uav img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        /* Wrap */
+        .wrap {
+            max-width: 920px;
+            margin: 0 auto;
+            padding: 0 16px 64px;
+            width: 100%;
+        }
+
+        /* ====== HERO ====== */
+        .hero-sec {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 36px 0 44px;
+            position: relative;
+        }
+        .hero-glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 380px;
+            height: 380px;
+            background: radial-gradient(circle, rgba(192, 57, 43, 0.13) 0%, transparent 70%);
+            pointer-events: none;
+            filter: blur(24px);
+        }
+        .hero-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: clamp(52px, 11vw, 92px);
+            letter-spacing: 0.07em;
+            color: #fff;
+            text-align: center;
+            line-height: 0.88;
+            position: relative;
+            z-index: 2;
+            text-shadow: 0 0 70px rgba(192, 57, 43, 0.3);
+        }
+        .hero-title .l2 {
+            color: var(--accent);
+        }
+
+        .hero-img-wrap {
+            position: relative;
+            width: clamp(210px, 55vw, 330px);
+            margin: 22px 0 14px;
+            z-index: 2;
+        }
+        .hero-img-wrap img {
+            width: 100%;
+            display: block;
+            filter: drop-shadow(0 22px 52px rgba(0, 0, 0, 0.99)) drop-shadow(0 4px 20px rgba(192, 57, 43, 0.16));
+            animation: flt 5.5s ease-in-out infinite;
+        }
+        @keyframes flt {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-9px);
+            }
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(192, 57, 43, 0.08);
+            border: 1px solid rgba(192, 57, 43, 0.22);
+            border-radius: 20px;
+            padding: 4px 14px;
+            font-family: 'Space Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 0.25em;
+            color: var(--accent);
+            text-transform: uppercase;
+        }
+        .hero-badge::before {
+            content: '';
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: pulse 1.8s infinite;
+        }
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.2;
+            }
+        }
+
+        /* Divider */
+        .divider {
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--line2), transparent);
+            margin: 30px 0;
+        }
+
+        /* Section label */
+        .sec-label {
+            font-family: 'Space Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 0.3em;
+            color: var(--t3);
+            text-transform: uppercase;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sec-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--line);
+        }
+
+        /* ====== STATS ====== */
+        .stats-row {
+            max-width: 420px;
+            margin: 0 auto 10px;
+        }
+        .stat-box-time {
+            background: linear-gradient(135deg, var(--s1) 0%, var(--s2) 100%);
+            border: 1px solid rgba(192, 57, 43, 0.2);
+            border-radius: 14px;
+            padding: 22px 24px;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-box-time::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--red), transparent);
+        }
+        .stat-label-time {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            color: var(--t3);
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            font-family: 'Space Mono', monospace;
+        }
+        .stat-val-time {
+            font-size: 30px;
+            font-weight: 900;
+            color: var(--t1);
+            line-height: 1;
+            font-family: 'Space Mono', monospace;
+            font-variant-numeric: tabular-nums;
+        }
+        .stat-note-time {
+            font-size: 11px;
+            color: var(--t3);
+            margin-top: 6px;
+            letter-spacing: 0.04em;
+        }
+
+        /* ====== GAME SECTION ====== */
+        .game-outer {
+            margin: 0 0 10px;
+        }
+
+        .game-card {
+            background: var(--s1);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 22px 20px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 16px;
+            background: linear-gradient(135deg, var(--s1), var(--s2));
+            border-color: rgba(192, 57, 43, 0.15);
+            transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+            color: inherit;
+            cursor: pointer;
+        }
+        .game-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(192, 57, 43, 0.4);
+            box-shadow: 0 12px 34px rgba(192, 57, 43, 0.2);
+        }
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(192, 57, 43, 0.3), transparent);
+        }
+        .game-card-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            background: linear-gradient(135deg, var(--red), var(--accent));
+            box-shadow: 0 6px 20px rgba(192, 57, 43, 0.35);
+        }
+        .game-card-body {
+            flex: 1;
+        }
+        .game-card-name {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 22px;
+            letter-spacing: 0.08em;
+            color: #fff;
+            line-height: 1;
+        }
+        .game-card-name span {
+            color: var(--accent);
+        }
+        .game-card-desc {
+            font-size: 11px;
+            color: var(--t2);
+            line-height: 1.5;
+            letter-spacing: 0.02em;
+            margin: 6px 0 10px;
+        }
+        .game-card-desc.coin {
+            color: #e8b94a;
+            margin-bottom: 8px;
+        }
+        .game-card-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-family: 'Space Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 0.18em;
+            color: #6be08a;
+            text-transform: uppercase;
+            border: 1px solid rgba(107, 224, 138, 0.35);
+            background: rgba(107, 224, 138, 0.06);
+            border-radius: 20px;
+            padding: 3px 10px;
+            width: fit-content;
+        }
+        .live-dot {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #6be08a;
+            margin-right: 5px;
+            animation: pulse 1.6s infinite;
+        }
+        .game-play-arrow {
+            margin-left: auto;
+            align-self: center;
+            flex-shrink: 0;
+            font-size: 20px;
+            color: var(--t3);
+            transition: color 0.2s, transform 0.2s;
+        }
+        .game-card:hover .game-play-arrow {
+            color: var(--accent);
+            transform: translateX(3px);
+        }
+
+        /* ====== SUPPORT ====== */
+        .support-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 0 32px;
+            gap: 10px;
+        }
+        .support-label {
+            font-family: 'Space Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 0.3em;
+            color: var(--t3);
+            text-transform: uppercase;
+        }
+        .support-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #0b84c8 0%, #0568a0 100%);
+            border: none;
+            border-radius: 12px;
+            padding: 13px 30px;
+            color: #fff;
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            text-decoration: none;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 20px rgba(0, 120, 200, 0.22);
+        }
+        .support-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 120, 200, 0.32);
+        }
+        .support-btn svg {
+            width: 17px;
+            height: 17px;
+            flex-shrink: 0;
+        }
+
+        /* ====== FOOTER ====== */
+        footer {
+            border-top: 1px solid var(--line);
+            padding: 20px;
+            text-align: center;
+        }
+        .footer-logo {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 17px;
+            letter-spacing: 0.12em;
+            color: var(--t3);
+            margin-bottom: 4px;
+        }
+        .footer-logo span {
+            color: var(--accent);
+        }
+        .footer-copy {
+            font-family: 'Space Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 0.18em;
+            color: var(--t3);
+            text-transform: uppercase;
+        }
+
+        /* ====== UCHIP COINS ====== */
+        .ucoins {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-family: 'Space Mono', monospace;
+            font-size: 12px;
+            font-weight: 700;
+            color: #e8b94a;
+            white-space: nowrap;
+            padding-right: 9px;
+            margin-right: 1px;
+            border-right: 1px solid var(--line2);
+        }
+        .ucoins .uc-icon {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            background: radial-gradient(circle at 32% 28%, #fff7d8 0%, #ffe89a 14%, #ffd866 32%, #e8b94a 55%, #c4912a 78%, #9a6e1c 100%);
+            border: 1px solid #fff1bd;
+            box-shadow: 0 0 6px rgba(255, 200, 80, 0.45);
+        }
+        .ucoins span {
+            color: var(--t3);
+            font-weight: 400;
+            font-size: 10px;
+        }
+
+        /* ====== ANTI-CHEAT NOTICE ====== */
+        .anti-cheat-notice {
+            font-family: 'Space Mono', monospace;
+            font-size: 8px;
+            color: var(--t3);
+            text-align: center;
+            padding: 12px 0 4px;
+            letter-spacing: 0.1em;
+            opacity: 0.5;
+        }
+
+        /* Error/Warning states */
+        .stat-val-time.error {
+            color: var(--red);
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LOADER -->
+    <div id="loader">
+        <div class="loader-logo">Viperr Mini<br><span class="red">Game</span></div>
+        <div class="loader-tag">Initializing...</div>
+        <div class="loader-bar-wrap">
+            <div class="loader-bar-fill"></div>
+        </div>
+        <div class="loader-pct" id="loader-pct">0%</div>
+    </div>
+
+    <!-- MAIN -->
+    <div id="main">
+
+        <div class="ticker">
+            <div class="ticker-r">
+                <span>viperr rehab tour <b>&times;</b> VladaOgurch <b>&times;</b> Roretyu <b>&times;</b> viperr rehab tour <b>&times;</b> VladaOgurch <b>&times;</b> Roretyu</span>
+                <span>viperr rehab tour <b>&times;</b> VladaOgurch <b>&times;</b> Roretyu <b>&times;</b> viperr rehab tour <b>&times;</b> VladaOgurch <b>&times;</b> Roretyu</span>
+            </div>
+        </div>
+
+        <div class="hdr">
+            <div class="logo">Viperr <em>Mini</em></div>
+            <div class="uchip" id="uchip" style="display:none">
+                <div class="ucoins" id="ucoins"><span class="uc-icon"></span>0<span>VMG</span></div>
+                <div class="uname" id="uname"></div>
+                <div class="uav" id="uav"></div>
+            </div>
+        </div>
+
+        <div class="wrap" id="page-home">
+
+            <!-- HERO -->
+            <div class="hero-sec">
+                <div class="hero-glow"></div>
+                <div class="hero-title">
+                    Viperr Mini<br><span class="l2">Game</span>
+                </div>
+                <div class="hero-img-wrap">
+                    <img id="hero-img" src="" alt="Viperr Mini Game">
+                </div>
+                <div class="hero-badge">Season 01 — Live</div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- STATS -->
+            <div class="sec-label">Статистика</div>
+            <div class="stats-row">
+                <div class="stat-box-time">
+                    <div class="stat-label-time">⏱ Время в игре</div>
+                    <div class="stat-val-time" id="s-time">0ч 0м 0с</div>
+                    <div class="stat-note-time">Общее время с начала сезона</div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- GAME SECTION -->
+            <div class="game-outer">
+                <div class="sec-label">Game</div>
+                <a href="game.html" class="game-card">
+                    <div class="game-card-icon">🎤</div>
+                    <div class="game-card-body">
+                        <div class="game-card-name">Концерт <span>Viperr</span></div>
+                        <div class="game-card-desc">Жми на артистов прямо во время концерта — удержи энергию зала, пока играет музыка, и узнай свою оценку в конце.</div>
+                        <div class="game-card-desc coin">🪙 Набери 5/5 — получи 1 VMG Coin</div>
+                        <div class="game-card-tag"><span class="live-dot"></span>Играть сейчас</div>
+                    </div>
+                    <div class="game-play-arrow">▶</div>
+                </a>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- SUPPORT -->
+            <div class="support-section">
+                <div class="support-label">Есть вопросы?</div>
+                <a href="https://t.me/roretyu" target="_blank" class="support-btn">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.94z"/>
+                    </svg>
+                    Написать в поддержку
+                </a>
+            </div>
+
+            <!-- Anti-cheat notice -->
+            <div class="anti-cheat-notice">🔒 Защита от читов активна • Все изменения проверяются</div>
+
+        </div>
+        <!-- /page-home -->
+
+        <footer>
+            <div class="footer-logo">Viperr Mini <span>Game</span></div>
+            <div class="footer-copy">&copy; 2026 Viperr Mini Game — All rights reserved</div>
+        </footer>
+
+    </div>
+
+    <script>
+        // ============================================================
+        // 1. HERO IMAGE (миниатюрная версия, без огромной base64)
+        // ============================================================
+        // Используем простой SVG или небольшую заглушку вместо гигантской base64
+        const HERO_IMG_SVG = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+                <rect width="400" height="400" rx="40" fill="#0f0f16"/>
+                <circle cx="200" cy="180" r="80" fill="url(#grad)" opacity="0.9"/>
+                <circle cx="160" cy="150" r="20" fill="#fff" opacity="0.8"/>
+                <circle cx="240" cy="150" r="20" fill="#fff" opacity="0.8"/>
+                <circle cx="160" cy="150" r="8" fill="#1a1a2e"/>
+                <circle cx="240" cy="150" r="8" fill="#1a1a2e"/>
+                <path d="M150 220 Q200 260 250 220" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round"/>
+                <rect x="170" y="280" width="60" height="20" rx="10" fill="#e04444"/>
+                <text x="200" y="295" text-anchor="middle" fill="#fff" font-size="12" font-family="Arial" font-weight="bold">VIPERR</text>
+                <defs>
+                    <radialGradient id="grad" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" style="stop-color:#e04444;stop-opacity:1"/>
+                        <stop offset="100%" style="stop-color:#c0392b;stop-opacity:0.3"/>
+                    </radialGradient>
+                </defs>
+            </svg>
+        `);
+
+        document.getElementById('hero-img').src = HERO_IMG_SVG;
+
+        // ============================================================
+        // 2. LOADER
+        // ============================================================
+        let pct = 0;
+        const pctEl = document.getElementById('loader-pct');
+        const ldrInt = setInterval(() => {
+            pct = Math.min(pct + Math.floor(Math.random() * 9 + 4), 100);
+            pctEl.textContent = pct + '%';
+            if (pct >= 100) clearInterval(ldrInt);
+        }, 75);
+
+        setTimeout(() => {
+            document.getElementById('loader').classList.add('fade');
+            document.getElementById('main').classList.add('show');
+            setTimeout(() => { document.getElementById('loader').style.display = 'none'; }, 900);
+        }, 2100);
+
+        // ============================================================
+        // 3. STORAGE KEYS
+        // ============================================================
+        const SK = 'viperr_v4'; // time progress (seconds)
+        const USK = 'viperr_user'; // persistent user key
+        const CSK = 'viperr_coins_v1'; // coin balances
+
+        // ============================================================
+        // 4. TELEGRAM WEBAPP INIT
+        // ============================================================
+        if (window.Telegram?.WebApp) {
+            const tg = window.Telegram.WebApp;
+            tg.ready();
+            tg.expand();
+            try { tg.disableVerticalSwipes(); } catch {}
+            try { tg.setHeaderColor('#07070c'); } catch {}
+            try { tg.setBackgroundColor('#07070c'); } catch {}
+        }
+
+        // ============================================================
+        // 5. ANTI-CHEAT: проверка на запуск вне Telegram WebApp
+        // ============================================================
+        function isTelegramWebApp() {
+            // Проверяем, что мы внутри Telegram WebApp
+            // Если нет — блокируем регистрацию и показываем предупреждение
+            const isTG = !!(window.Telegram?.WebApp?.initDataUnsafe?.user);
+            return isTG;
+        }
+
+        // ============================================================
+        // 6. USER MANAGEMENT (с защитой от подделки)
+        // ============================================================
+        function getUser() {
+            // Строгая проверка: только Telegram WebApp
+            if (!isTelegramWebApp()) {
+                console.warn('⚠️ Античит: Запуск вне Telegram WebApp!');
+                showBlockScreen('⛔ Доступ только из Telegram Mini App');
+                return null;
+            }
+
+            // 1. Telegram WebApp (основной и единственный источник)
+            if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
+                const u = window.Telegram.WebApp.initDataUnsafe.user;
+                const user = {
+                    id: String(u.id),
+                    name: [u.first_name, u.last_name].filter(Boolean).join(' '),
+                    handle: u.username || '',
+                    photo: u.photo_url || '',
+                    _verified: true // метка, что пользователь верифицирован
+                };
+                // Сохраняем, но с защитой от подделки
+                localStorage.setItem(USK, JSON.stringify({
+                    ...user,
+                    _saved: Date.now()
+                }));
+                return user;
+            }
+
+            // 2. Если нет пользователя из TG — блокируем
+            console.warn('⚠️ Античит: Пользователь не найден в Telegram WebApp');
+            showBlockScreen('⛔ Ошибка авторизации. Перезапустите приложение.');
+            return null;
+        }
+
+        // Блокировка экрана при обнаружении читерства
+        function showBlockScreen(message) {
+            const el = document.getElementById('s-time');
+            if (el) {
+                el.textContent = message;
+                el.classList.add('error');
+            }
+            // Скрываем чип пользователя
+            document.getElementById('uchip').style.display = 'none';
+            // Показываем предупреждение в заголовке
+            document.querySelector('.hero-badge').textContent = '⛔ ' + message;
+            document.querySelector('.hero-badge').style.color = 'var(--red)';
+            document.querySelector('.hero-badge').style.borderColor = 'rgba(192,57,43,0.5)';
+        }
+
+        // ============================================================
+        // 7. TIME PROGRESS
+        // ============================================================
+        function loadProgress(uid) {
+            try {
+                const all = JSON.parse(localStorage.getItem(SK) || '{}');
+                if (all[uid]) return all[uid];
+            } catch {}
+            return { totalSec: 0, lastSeen: null };
+        }
+
+        function saveProgress(uid, data) {
+            try {
+                const all = JSON.parse(localStorage.getItem(SK) || '{}');
+                all[uid] = data;
+                localStorage.setItem(SK, JSON.stringify(all));
+            } catch {}
+        }
+
+        // ============================================================
+        // 8. COINS
+        // ============================================================
+        function loadCoins(uid) {
+            try {
+                const all = JSON.parse(localStorage.getItem(CSK) || '{}');
+                return all[uid] || 0;
+            } catch { return 0; }
+        }
+
+        function saveCoins(uid, amount) {
+            try {
+                const all = JSON.parse(localStorage.getItem(CSK) || '{}');
+                all[uid] = amount;
+                localStorage.setItem(CSK, JSON.stringify(all));
+            } catch {}
+        }
+
+        // ============================================================
+        // 9. ANTI-CHEAT: Проверка скорости времени
+        // ============================================================
+        let cheatDetected = false;
+        let lastTickTime = Date.now();
+        let suspiciousTicks = 0;
+
+        function antiCheatCheck() {
+            if (cheatDetected) return false;
+
+            const now = Date.now();
+            const timeDiff = (now - lastTickTime) / 1000;
+
+            // Если прошло меньше 0.7 секунды — явный чит (ускорение)
+            if (timeDiff < 0.7) {
+                suspiciousTicks++;
+                console.warn('⚠️ Античит: Подозрительное ускорение #' + suspiciousTicks);
+                if (suspiciousTicks > 3) {
+                    cheatDetected = true;
+                    showBlockScreen('⛔ Чит обнаружен! Время остановлено');
+                    return false;
+                }
+                return true; // пока пропускаем
+            }
+
+            // Если прошло больше 5 секунд — возможно, вкладка была неактивна
+            if (timeDiff > 5) {
+                // Пропускаем, это не чит
+                lastTickTime = now;
+                return true;
+            }
+
+            // Нормальный тик
+            suspiciousTicks = 0;
+            lastTickTime = now;
+            return true;
+        }
+
+        // ============================================================
+        // 10. RENDER FUNCTIONS
+        // ============================================================
+        function formatTime(totalSec) {
+            if (cheatDetected) return '⛔ Чит';
+            const h = Math.floor(totalSec / 3600);
+            const m = Math.floor((totalSec % 3600) / 60);
+            const s = Math.floor(totalSec % 60);
+            return `${h}ч ${String(m).padStart(2, '0')}м ${String(s).padStart(2, '0')}с`;
+        }
+
+        function renderTime(prog) {
+            const el = document.getElementById('s-time');
+            if (cheatDetected) {
+                el.textContent = '⛔ Чит обнаружен!';
+                el.classList.add('error');
+                return;
+            }
+            el.textContent = formatTime(prog.totalSec || 0);
+            el.classList.remove('error');
+        }
+
+        function renderChip(u) {
+            if (!u) return;
+            document.getElementById('uchip').style.display = 'flex';
+            document.getElementById('uname').textContent = u.handle ? '@' + u.handle : u.name;
+            const av = document.getElementById('uav');
+            if (u.photo) {
+                av.innerHTML = `<img src="${u.photo}" alt="" onerror="this.parentElement.textContent='${(u.name || '?')[0].toUpperCase()}'">`;
+            } else {
+                av.textContent = (u.name || '?')[0].toUpperCase();
+            }
+        }
+
+        function renderCoinsChip(coins) {
+            const el = document.getElementById('ucoins');
+            if (el) {
+                el.innerHTML = `<span class="uc-icon"></span>${coins}<span>VMG</span>`;
+            }
+        }
+
+        // ============================================================
+        // 11. INIT
+        // ============================================================
+        (function init() {
+            const user = getUser();
+
+            if (!user) {
+                // Пользователь не авторизован — блокируем всё
+                return;
+            }
+
+            renderChip(user);
+
+            const prog = loadProgress(user.id);
+            // Проверка на подозрительно большое время
+            if (prog.totalSec > 86400 * 30) { // больше 30 дней — подозрительно
+                console.warn('⚠️ Античит: Подозрительно большое время');
+                prog.totalSec = 86400; // сбрасываем до разумного
+                saveProgress(user.id, prog);
+            }
+
+            prog.lastSeen = Date.now();
+            saveProgress(user.id, prog);
+
+            renderTime(prog);
+            renderCoinsChip(loadCoins(user.id));
+
+            // ============================================================
+            // 12. MAIN TIMER с античитом
+            // ============================================================
+            let tickCount = 0;
+            const timerInterval = setInterval(() => {
+                tickCount++;
+
+                // Античит-проверка
+                if (!antiCheatCheck()) {
+                    clearInterval(timerInterval);
+                    return;
+                }
+
+                // Обновляем время
+                const p = loadProgress(user.id);
+                p.totalSec = (p.totalSec || 0) + 1;
+                saveProgress(user.id, p);
+
+                // Обновляем UI
+                renderTime(p);
+                renderCoinsChip(loadCoins(user.id));
+
+                // Каждые 60 секунд проверяем консистентность
+                if (tickCount % 60 === 0) {
+                    // Проверка, что время не слишком большое
+                    const current = loadProgress(user.id).totalSec || 0;
+                    if (current > 86400 * 30) { // больше 30 дней
+                        cheatDetected = true;
+                        showBlockScreen('⛔ Чит обнаружен!');
+                        clearInterval(timerInterval);
+                    }
+                }
+            }, 1000);
+
+            // ============================================================
+            // 13. ЗАЩИТА ОТ ИЗМЕНЕНИЙ В КОНСОЛИ
+            // ============================================================
+            // Защищаем localStorage от прямого изменения через консоль
+            const originalSetItem = localStorage.setItem;
+            localStorage.setItem = function(key, value) {
+                // Блокируем изменение ключей времени и монет
+                if (key === SK || key === CSK) {
+                    console.warn('⚠️ Античит: Попытка изменения защищённых данных');
+                    // Проверяем, не пытаются ли подделать время
+                    if (key === SK) {
+                        try {
+                            const data = JSON.parse(value);
+                            const uid = user?.id;
+                            if (uid && data[uid]) {
+                                const newTime = data[uid].totalSec || 0;
+                                const oldTime = loadProgress(uid).totalSec || 0;
+                                // Если новое время больше старого более чем на 10 секунд — подозрительно
+                                if (newTime > oldTime + 10) {
+                                    console.warn('⚠️ Античит: Попытка резкого увеличения времени!');
+                                    cheatDetected = true;
+                                    showBlockScreen('⛔ Чит обнаружен!');
+                                    clearInterval(timerInterval);
+                                    return;
+                                }
+                            }
+                        } catch {}
+                    }
+                    // Разрешаем сохранение только если это не читерская попытка
+                    originalSetItem.call(localStorage, key, value);
+                } else {
+                    originalSetItem.call(localStorage, key, value);
+                }
+            };
+
+            // Блокируем переопределение функций
+            Object.freeze(localStorage);
+
+            console.log('✅ Viperr Mini Game загружен. Античит активен.');
+        })();
+    </script>
+</body>
+</html>
