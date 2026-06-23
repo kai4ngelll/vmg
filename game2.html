@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Viperr Game — Поймай яйцо</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+  <style>
+    /* --- RESET & BASE --- */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #07070c;
+      --s1: #0f0f16;
+      --s2: #161620;
+      --line: rgba(255,255,255,0.08);
+      --t1: #eeeef4;
+      --t2: #8888a0;
+      --t3: #484858;
+      --red: #c0392b;
+      --accent: #e04444;
+    }
+
+    html, body { height: 100%; overflow: hidden; user-select: none; }
+    body {
+      background: var(--bg);
+      color: var(--t1);
+      font-family: 'Inter', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(ellipse at 50% 30%, rgba(192,57,43,0.18) 0%, transparent 60%),
+                  linear-gradient(180deg, #0a0a10 0%, #050508 100%);
+    }
+
+    /* --- LOADING SCREEN --- */
+    #load-screen {
+      position: fixed; inset: 0; z-index: 500;
+      background: var(--bg);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 24px; padding: 30px; text-align: center;
+      transition: opacity 0.6s ease;
+    }
+    #load-screen.hide { opacity: 0; pointer-events: none; }
+
+    .load-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(28px, 7vw, 44px);
+      letter-spacing: 0.08em; color: #fff;
+      text-shadow: 0 0 40px rgba(192,57,43,0.4);
+    }
+    .load-title span { color: var(--accent); }
+
+    .load-msg {
+      font-size: 14px; line-height: 1.6; color: var(--t2);
+      max-width: 320px;
+    }
+    .load-msg b { color: var(--accent); font-weight: 700; }
+
+    .load-bar-wrap {
+      width: min(260px, 70vw); height: 3px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 10px; overflow: hidden;
+    }
+    .load-bar-fill {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, var(--red), var(--accent));
+      border-radius: 10px;
+      animation: loadfill 4s linear forwards;
+    }
+    @keyframes loadfill { 0%{ width: 0%; } 100%{ width: 100%; } }
+
+    /* --- GAME CANVAS --- */
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 450px;
+      height: 100vh;
+      max-height: 800px;
+      background: radial-gradient(ellipse at 50% 20%, rgba(192,57,43,0.12) 0%, transparent 60%),
+                  linear-gradient(180deg, #0c0c14 0%, #050508 100%);
+      overflow: hidden;
+      border-left: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+      box-shadow: 0 0 60px rgba(0,0,0,0.8);
+      touch-action: none;
+      cursor: pointer;
+    }
+
+    /* --- TOP UI --- */
+    #game-ui {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 20;
+      background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 100%);
+      pointer-events: none;
+    }
+    .ui-left, .ui-right { display: flex; align-items: center; gap: 14px; }
+    .ui-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      color: var(--t3);
+      text-transform: uppercase;
+    }
+    .ui-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 26px;
+      color: #fff;
+      text-shadow: 0 0 20px rgba(192,57,43,0.3);
+      line-height: 1;
+    }
+    .ui-value.low { color: var(--accent); animation: pulse 0.6s infinite; }
+    @keyframes pulse { 0%,100%{ opacity: 1; } 50%{ opacity: 0.4; } }
+
+    .hearts { display: flex; gap: 4px; font-size: 20px; margin-left: 4px; }
+
+    /* --- PLAYER --- */
+    #player {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100px;
+      z-index: 10;
+      pointer-events: none;
+      transition: left 0.05s linear;
+    }
+    #player img {
+      width: 100%;
+      display: block;
+      filter: drop-shadow(0 10px 30px rgba(0,0,0,0.8));
+    }
+    #basket {
+      position: absolute;
+      top: -16px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 64px;
+      height: 18px;
+      background: linear-gradient(180deg, #6a3f1a, #4a2a0e);
+      border-radius: 4px 4px 0 0;
+      border-bottom: 3px solid #2a1808;
+      box-shadow: 0 -6px 12px rgba(0,0,0,0.4);
+      pointer-events: none;
+    }
+    #basket::after {
+      content: '';
+      position: absolute;
+      top: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 70px;
+      height: 8px;
+      background: linear-gradient(180deg, #8a5a2a, #6a3f1a);
+      border-radius: 50%;
+      border-bottom: 2px solid #2a1808;
+    }
+
+    /* --- FALLING ITEMS --- */
+    .item {
+      position: absolute;
+      width: 34px;
+      height: 34px;
+      top: -40px;
+      pointer-events: none;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
+      transition: none;
+    }
+    .item.egg { font-size: 30px; }
+    .item.bomb { font-size: 32px; }
+    .item.coin { font-size: 28px; }
+
+    /* --- RESULT OVERLAY --- */
+    #result-overlay {
+      position: fixed; inset: 0; z-index: 60;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.5s;
+      background: rgba(0,0,0,0.7);
+    }
+    #result-overlay.show { opacity: 1; pointer-events: auto; }
+
+    .result-card {
+      background: linear-gradient(135deg, var(--s1), var(--s2));
+      border: 1px solid rgba(192,57,43,0.25);
+      border-radius: 20px;
+      padding: 36px 28px;
+      width: min(360px, 100%);
+      text-align: center;
+      transform: scale(0.85);
+      transition: transform 0.5s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    #result-overlay.show .result-card { transform: scale(1); }
+    .result-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--red), transparent);
+    }
+
+    .result-icon { font-size: 48px; margin-bottom: 8px; }
+    .result-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px; letter-spacing: 0.04em; color: #fff;
+      margin-bottom: 6px;
+    }
+    .result-sub {
+      font-size: 14px; color: var(--t2); margin-bottom: 16px; line-height: 1.5;
+    }
+    .coin-earned {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      background: linear-gradient(135deg, rgba(255,216,102,0.14), rgba(224,68,68,0.06));
+      border: 1px solid rgba(224,180,80,0.35); border-radius: 12px;
+      padding: 11px 14px; margin-bottom: 18px;
+      font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700;
+      color: #e8b94a; letter-spacing: 0.05em;
+      animation: coinPop 0.5s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes coinPop { 0%{ transform: scale(0.7); opacity: 0; } 100%{ transform: scale(1); opacity: 1; } }
+
+    .result-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: linear-gradient(135deg, var(--red), var(--accent));
+      border: none; border-radius: 12px; padding: 13px 28px;
+      color: #fff; font-family: 'Space Mono', monospace;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.15em;
+      text-transform: uppercase; cursor: pointer;
+      margin: 4px;
+      transition: transform 0.15s;
+    }
+    .result-btn:active { transform: scale(0.94); }
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: transparent;
+      border: 1px solid rgba(192,57,43,0.5); border-radius: 12px; padding: 13px 28px;
+      color: var(--t2); font-family: 'Space Mono', monospace;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.15em;
+      text-transform: uppercase; cursor: pointer;
+      margin: 4px;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .back-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* --- SCORE POPUP --- */
+    .score-popup {
+      position: absolute;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      color: #ffd866;
+      pointer-events: none;
+      z-index: 15;
+      animation: scoreFade 0.8s ease-out forwards;
+      text-shadow: 0 0 20px rgba(255,216,102,0.4);
+    }
+    @keyframes scoreFade {
+      0% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-60px) scale(1.2); }
+    }
+
+    .hit-effect {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 4;
+      animation: hitAnim 0.3s ease-out forwards;
+    }
+    @keyframes hitAnim {
+      0% { transform: scale(0.5); opacity: 1; }
+      100% { transform: scale(2); opacity: 0; }
+    }
+
+    /* --- RESPONSIVE --- */
+    @media (max-width: 480px) {
+      #player { width: 80px; bottom: 15px; }
+      #basket { width: 52px; height: 14px; top: -12px; }
+      #basket::after { width: 58px; height: 6px; top: -4px; }
+      .item { width: 28px; height: 28px; font-size: 22px; }
+      .ui-value { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOADING SCREEN -->
+<div id="load-screen">
+  <div class="load-title">Viperr <span>Game</span></div>
+  <div class="load-msg">Поймай <b>10 яиц</b> за 1 минуту,<br>но не дай им сломаться!</div>
+  <div class="load-bar-wrap"><div class="load-bar-fill"></div></div>
+</div>
+
+<!-- GAME CONTAINER -->
+<div id="game-container">
+
+  <!-- UI -->
+  <div id="game-ui">
+    <div class="ui-left">
+      <div>
+        <div class="ui-label">Яйца</div>
+        <div class="ui-value" id="score-display">0/10</div>
+      </div>
+    </div>
+    <div class="ui-right">
+      <div>
+        <div class="ui-label">Время</div>
+        <div class="ui-value" id="timer-display">1:00</div>
+      </div>
+      <div>
+        <div class="ui-label">Жизни</div>
+        <div class="hearts" id="hearts-display">❤️❤️❤️</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PLAYER -->
+  <div id="player">
+    <img id="player-img" src="IMG_20260620_221002_447.PNG" alt="Персонаж">
+    <div id="basket"></div>
+  </div>
+
+</div>
+
+<!-- RESULT OVERLAY -->
+<div id="result-overlay">
+  <div class="result-card">
+    <div class="result-icon" id="result-icon">🍳</div>
+    <div class="result-title" id="result-title">Эх, бро, неудача</div>
+    <div class="result-sub" id="result-sub">В следующий раз повезет!</div>
+    <div id="result-coin" class="coin-earned" style="display:none;">
+      <span>🪙</span><span>+1 VMG Coin начислено!</span>
+    </div>
+    <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:4px;">
+      <button class="result-btn" id="restart-btn">🔁 Сыграть ещё</button>
+      <button class="back-btn" onclick="window.location.href='index.html'">← На главную</button>
+    </div>
+  </div>
+</div>
+
+<audio id="bgm" src="song3.mp3" preload="auto" loop></audio>
+
+<script>
+// ====== USER SYSTEM ======
+const USK = 'viperr_user';
+const CSK = 'viperr_coins_v1';
+
+function getUser() {
+  if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
+    const u = window.Telegram.WebApp.initDataUnsafe.user;
+    const user = {
+      id: String(u.id),
+      name: [u.first_name, u.last_name].filter(Boolean).join(' '),
+      handle: u.username || '',
+      photo: u.photo_url || ''
+    };
+    localStorage.setItem(USK, JSON.stringify(user));
+    return user;
+  }
+  const p = new URLSearchParams(location.search);
+  if (p.get('uid') || p.get('name')) {
+    const user = {
+      id: p.get('uid') || 'g' + Date.now(),
+      name: p.get('name') || 'Игрок',
+      handle: p.get('username') || '',
+      photo: p.get('photo') || ''
+    };
+    localStorage.setItem(USK, JSON.stringify(user));
+    return user;
+  }
+  try {
+    const saved = localStorage.getItem(USK);
+    if (saved) return JSON.parse(saved);
+  } catch {}
+  return null;
+}
+
+function awardCoin(uid) {
+  try {
+    const all = JSON.parse(localStorage.getItem(CSK) || '{}');
+    all[uid] = (all[uid] || 0) + 1;
+    localStorage.setItem(CSK, JSON.stringify(all));
+    return true;
+  } catch { return false; }
+}
+
+// ====== CONSTANTS ======
+const GAME_DURATION = 60; // 1 минута
+const TARGET_SCORE = 10;
+const MAX_HP = 3;
+const ITEM_TYPES = [
+  { id: 'egg', emoji: '🥚', weight: 60, score: 1 },
+  { id: 'bomb', emoji: '💣', weight: 25, score: -1 },
+  { id: 'coin', emoji: '🪙', weight: 15, score: 0 },
+];
+
+// ====== STATE ======
+let player = { x: 0.5 };
+let items = [];
+let score = 0;
+let hp = MAX_HP;
+let timeLeft = GAME_DURATION;
+let gameRunning = false;
+let spawnInterval = null;
+let gameLoop = null;
+
+const container = document.getElementById('game-container');
+const playerEl = document.getElementById('player');
+const scoreDisplay = document.getElementById('score-display');
+const timerDisplay = document.getElementById('timer-display');
+const heartsDisplay = document.getElementById('hearts-display');
+const bgm = document.getElementById('bgm');
+
+// ====== LOADING ======
+setTimeout(() => {
+  document.getElementById('load-screen').classList.add('hide');
+  startGame();
+}, 4000);
+
+// ====== START GAME ======
+function startGame() {
+  gameRunning = true;
+  score = 0;
+  hp = MAX_HP;
+  timeLeft = GAME_DURATION;
+  items = [];
+  updateUI();
+  bgm.currentTime = 0;
+  bgm.play().catch(() => {});
+  if (spawnInterval) clearInterval(spawnInterval);
+  if (gameLoop) cancelAnimationFrame(gameLoop);
+  spawnInterval = setInterval(spawnItem, 600);
+  lastTime = performance.now();
+  gameLoop = requestAnimationFrame(gameTick);
+}
+
+// ====== GAME TICK ======
+let lastTime = 0;
+let accumulator = 0;
+const STEP = 16; // ~60fps
+
+function gameTick(timestamp) {
+  if (!gameRunning) return;
+  const delta = Math.min(timestamp - lastTime, 50);
+  lastTime = timestamp;
+  accumulator += delta;
+
+  while (accumulator >= STEP) {
+    update(STEP / 1000);
+    accumulator -= STEP;
+  }
+
+  gameLoop = requestAnimationFrame(gameTick);
+}
+
+function update(dt) {
+  // Update timer
+  timeLeft -= dt;
+  if (timeLeft <= 0) {
+    timeLeft = 0;
+    endGame();
+    return;
+  }
+
+  // Update items
+  for (let i = items.length - 1; i >= 0; i--) {
+    const item = items[i];
+    item.y += 120 * dt; // скорость падения
+    if (item.y > container.clientHeight + 40) {
+      items.splice(i, 1);
+      continue;
+    }
+    // Check catch
+    const playerRect = playerEl.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    const itemRect = {
+      left: containerRect.left + item.x - 17,
+      right: containerRect.left + item.x + 17,
+      top: containerRect.top + item.y - 17,
+      bottom: containerRect.top + item.y + 17
+    };
+    // Basket area (top of player)
+    const basketY = playerRect.top + 10;
+    const basketLeft = playerRect.left + 18;
+    const basketRight = playerRect.right - 18;
+
+    if (itemRect.bottom > basketY && itemRect.top < basketY + 20 &&
+        itemRect.right > basketLeft && itemRect.left < basketRight) {
+      // Catch!
+      if (item.type === 'egg') {
+        score++;
+        showScorePopup(item.x, item.y, '+1 🥚');
+      } else if (item.type === 'bomb') {
+        hp--;
+        showScorePopup(item.x, item.y, '💥 -1 HP');
+      } else if (item.type === 'coin') {
+        showScorePopup(item.x, item.y, '🪙');
+      }
+      items.splice(i, 1);
+      updateUI();
+      if (score >= TARGET_SCORE) {
+        endGame(true);
+        return;
+      }
+      if (hp <= 0) {
+        endGame(false);
+        return;
+      }
+    }
+  }
+
+  // Move player with touch/mouse
+  updateUI();
+}
+
+// ====== SPAWN ITEMS ======
+function spawnItem() {
+  if (!gameRunning) return;
+  const containerWidth = container.clientWidth;
+  const x = 20 + Math.random() * (containerWidth - 40);
+  const type = weightedRandom(ITEM_TYPES);
+  items.push({
+    x: x,
+    y: -30,
+    type: type.id,
+    emoji: type.emoji,
+    score: type.score
+  });
+  // Visual
+  const el = document.createElement('div');
+  el.className = 'item ' + type.id;
+  el.textContent = type.emoji;
+  el.style.left = x + 'px';
+  el.style.top = '-30px';
+  el.dataset.index = items.length - 1;
+  container.appendChild(el);
+}
+
+function weightedRandom(types) {
+  const total = types.reduce((s, t) => s + t.weight, 0);
+  let r = Math.random() * total;
+  for (const t of types) {
+    r -= t.weight;
+    if (r <= 0) return t;
+  }
+  return types[0];
+}
+
+// ====== UI UPDATE ======
+function updateUI() {
+  scoreDisplay.textContent = `${score}/${TARGET_SCORE}`;
+  timerDisplay.textContent = formatTime(timeLeft);
+  timerDisplay.classList.toggle('low', timeLeft <= 10);
+  heartsDisplay.textContent = '❤️'.repeat(Math.max(0, hp)) + '🖤'.repeat(Math.max(0, MAX_HP - hp));
+
+  // Sync items with DOM
+  const itemEls = container.querySelectorAll('.item');
+  items.forEach((item, idx) => {
+    if (itemEls[idx]) {
+      itemEls[idx].style.top = item.y + 'px';
+      itemEls[idx].style.left = item.x + 'px';
+    }
+  });
+  // Remove extra
+  while (itemEls.length > items.length) {
+    itemEls[itemEls.length - 1].remove();
+  }
+}
+
+function formatTime(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return m + ':' + String(s).padStart(2, '0');
+}
+
+// ====== SCORE POPUP ======
+function showScorePopup(x, y, text) {
+  const el = document.createElement('div');
+  el.className = 'score-popup';
+  el.textContent = text;
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 800);
+}
+
+// ====== PLAYER CONTROLS ======
+let isDragging = false;
+
+function handleMove(clientX) {
+  if (!gameRunning) return;
+  const rect = container.getBoundingClientRect();
+  const x = clientX - rect.left;
+  const maxX = rect.width - playerEl.offsetWidth;
+  const clamped = Math.max(0, Math.min(maxX, x - playerEl.offsetWidth / 2));
+  player.x = clamped / (rect.width - playerEl.offsetWidth);
+  playerEl.style.left = (clamped + playerEl.offsetWidth / 2) + 'px';
+}
+
+container.addEventListener('mousemove', (e) => {
+  if (e.buttons === 1) handleMove(e.clientX);
+});
+container.addEventListener('mousedown', (e) => handleMove(e.clientX));
+
+container.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  const touch = e.touches[0];
+  if (touch) handleMove(touch.clientX);
+}, { passive: false });
+container.addEventListener('touchstart', (e) => {
+  const touch = e.touches[0];
+  if (touch) handleMove(touch.clientX);
+}, { passive: true });
+
+// ====== END GAME ======
+function endGame(win = false) {
+  if (!gameRunning) return;
+  gameRunning = false;
+  if (spawnInterval) clearInterval(spawnInterval);
+  if (gameLoop) cancelAnimationFrame(gameLoop);
+  bgm.pause();
+
+  const overlay = document.getElementById('result-overlay');
+  const icon = document.getElementById('result-icon');
+  const title = document.getElementById('result-title');
+  const sub = document.getElementById('result-sub');
+  const coinEl = document.getElementById('result-coin');
+
+  if (win || score >= TARGET_SCORE) {
+    icon.textContent = '🎉';
+    title.textContent = 'Ого, молодец!';
+    sub.textContent = `Ты поймал ${score} яиц!`;
+    // Награда
+    const user = getUser();
+    if (user && awardCoin(user.id)) {
+      coinEl.style.display = 'flex';
+    } else {
+      coinEl.style.display = 'none';
+    }
+  } else {
+    icon.textContent = '😢';
+    title.textContent = 'Эх, бро, неудача';
+    sub.textContent = `Ты поймал ${score} из 10. В следующий раз повезет!`;
+    coinEl.style.display = 'none';
+  }
+
+  overlay.classList.add('show');
+}
+
+// ====== RESTART ======
+document.getElementById('restart-btn').addEventListener('click', () => {
+  document.getElementById('result-overlay').classList.remove('show');
+  document.getElementById('result-coin').style.display = 'none';
+  // Clear items
+  document.querySelectorAll('.item').forEach(el => el.remove());
+  items = [];
+  startGame();
+});
+
+// ====== INIT ======
+// Set initial player position
+setTimeout(() => {
+  const rect = container.getBoundingClientRect();
+  playerEl.style.left = (rect.width / 2 - playerEl.offsetWidth / 2) + 'px';
+}, 100);
+
+</script>
+</body>
+  </html>
