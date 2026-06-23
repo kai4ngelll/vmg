@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Viperr — Яйцелов</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Space+Mono:wght@400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{
+  height:100%;overflow:hidden;
+  font-family:'Inter',sans-serif;
+  user-select:none;
+  -webkit-tap-highlight-color:transparent;
+  background:#e8f4f8;
+}
+
+/* ===== LOADING ===== */
+#load-screen{
+  position:fixed;inset:0;z-index:900;
+  background:#07070c;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:20px;padding:30px;text-align:center;
+  transition:opacity 0.7s ease;
+}
+#load-screen.hide{opacity:0;pointer-events:none;}
+.load-logo{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(34px,9vw,56px);
+  letter-spacing:0.1em;color:#fff;
+  line-height:1;
+}
+.load-logo span{color:#f5c842;}
+.load-sub{font-size:13px;color:#8888a0;max-width:280px;line-height:1.6;}
+.load-sub b{color:#f5c842;}
+.load-bar-wrap{
+  width:min(240px,65vw);height:3px;
+  background:rgba(255,255,255,0.08);border-radius:10px;overflow:hidden;
+}
+.load-bar-fill{
+  height:100%;width:0%;
+  background:linear-gradient(90deg,#b8860b,#f5c842,#fffacc);
+  animation:lf 3.5s linear forwards;
+}
+@keyframes lf{to{width:100%}}
+.load-hint{font-size:11px;color:#484858;letter-spacing:.1em;margin-top:4px;}
+
+/* ===== GAME WRAPPER ===== */
+#game{
+  position:fixed;inset:0;
+  display:flex;flex-direction:column;
+  background:linear-gradient(180deg,#d6ecf5 0%,#c2dff0 40%,#a8d0e8 100%);
+  overflow:hidden;
+  filter:blur(0);
+  transition:filter .3s;
+}
+#game.blurred{filter:blur(5px);}
+
+/* ===== HUD ===== */
+.hud{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 18px 6px;
+  position:relative;z-index:20;
+  background:rgba(255,255,255,0.45);
+  border-bottom:2px solid rgba(0,0,0,0.07);
+  backdrop-filter:blur(4px);
+}
+.hud-timer{
+  font-family:'Bebas Neue',sans-serif;font-size:34px;
+  color:#1a1a2e;letter-spacing:.05em;
+}
+.hud-timer.low{color:#c0392b;animation:tpulse .5s infinite;}
+@keyframes tpulse{0%,100%{opacity:1}50%{opacity:.4}}
+.hud-eggs{
+  font-family:'Space Mono',monospace;font-size:15px;
+  font-weight:700;color:#1a6b2e;
+  display:flex;align-items:center;gap:6px;
+}
+.hud-hp{display:flex;gap:4px;}
+.hp-heart{font-size:20px;transition:opacity .25s;}
+.hp-heart.lost{opacity:.18;}
+
+/* ===== FIELD ===== */
+#field{
+  flex:1;position:relative;overflow:hidden;
+}
+
+/* Sky clouds deco */
+.cloud{
+  position:absolute;
+  background:#fff;
+  border-radius:50px;
+  opacity:.55;
+  pointer-events:none;
+}
+
+/* GROUND */
+.ground{
+  position:absolute;bottom:0;left:0;right:0;
+  height:60px;
+  background:linear-gradient(180deg,#7bc67e,#5aad5e);
+  border-top:3px solid #3d8c41;
+  z-index:2;
+}
+.ground::before{
+  content:'';position:absolute;top:-8px;left:0;right:0;height:8px;
+  background:repeating-linear-gradient(90deg,#5aad5e 0 18px,#6dc470 18px 36px);
+}
+
+/* LANE SHELVES — 3 rows like Ну погоди */
+.shelf{
+  position:absolute;left:0;right:0;height:14px;
+  background:linear-gradient(180deg,#8B5E3C,#6b4528);
+  border-top:3px solid #a0713f;
+  border-bottom:3px solid #5a3820;
+  z-index:3;
+}
+/* Chickens on shelves */
+.chicken{
+  position:absolute;font-size:clamp(18px,4vw,26px);
+  top:-28px;
+  z-index:4;
+  animation:cluck .7s infinite alternate;
+}
+@keyframes cluck{0%{transform:rotate(-5deg)}100%{transform:rotate(5deg)}}
+
+/* ===== PLAYER ===== */
+#player-wrap{
+  position:absolute;
+  width:clamp(70px,18vw,115px);
+  z-index:10;
+  transition:left .05s linear;
+}
+#player-img{
+  width:100%;display:block;
+  filter:drop-shadow(0 4px 12px rgba(0,0,0,0.25));
+}
+#player-fallback{
+  display:none;
+  flex-direction:column;align-items:center;
+  font-size:clamp(32px,8vw,52px);line-height:1.1;
+}
+
+/* BASKET ZONE — top of player head */
+#basket-zone{
+  position:absolute;
+  top:2%;left:15%;
+  width:70%;height:22%;
+  z-index:11;
+  /* border:1px dashed red; */
+}
+
+/* ===== FALLING ITEMS ===== */
+.item{
+  position:absolute;
+  font-size:clamp(22px,5.5vw,34px);
+  z-index:8;
+  pointer-events:none;
+  line-height:1;
+}
+.item.spin{animation:itemspin 1s linear infinite;}
+.item.wobble{animation:itemwobble .5s linear infinite;}
+@keyframes itemspin{to{transform:rotate(360deg)}}
+@keyframes itemwobble{0%,100%{transform:rotate(-15deg)}50%{transform:rotate(15deg)}}
+
+/* ===== FLASH TEXT ===== */
+.flash-txt{
+  position:absolute;
+  font-family:'Bebas Neue',sans-serif;
+  font-size:28px;
+  font-weight:900;
+  z-index:50;
+  pointer-events:none;
+  animation:floatup .7s ease-out forwards;
+  white-space:nowrap;
+}
+.flash-txt.good{color:#1a6b2e;text-shadow:0 0 12px rgba(26,107,46,.6);}
+.flash-txt.bad{color:#c0392b;text-shadow:0 0 12px rgba(192,57,43,.6);}
+@keyframes floatup{
+  0%{opacity:1;transform:translateY(0) scale(1);}
+  100%{opacity:0;transform:translateY(-55px) scale(1.2);}
+}
+
+/* ===== DAMAGE FLASH ===== */
+#dmg-flash{
+  position:fixed;inset:0;z-index:400;pointer-events:none;
+  background:rgba(192,57,43,0.32);opacity:0;transition:opacity .1s;
+}
+#dmg-flash.on{opacity:1;}
+
+/* ===== OVERLAYS ===== */
+.overlay{
+  position:fixed;inset:0;z-index:600;
+  background:rgba(10,10,20,0.88);
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  gap:16px;padding:28px;text-align:center;
+  backdrop-filter:blur(8px);
+}
+.overlay.show{display:flex;}
+
+/* SELECT OVERLAY */
+#select-overlay .sel-title{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(28px,7vw,44px);
+  color:#fff;letter-spacing:.08em;
+  text-shadow:0 0 30px rgba(245,200,66,.35);
+  line-height:1.1;
+}
+#select-overlay .sel-title span{color:#f5c842;}
+#select-overlay .sel-desc{
+  font-size:13px;color:#8888a0;max-width:280px;line-height:1.6;
+}
+#select-overlay .sel-desc b{color:#f5c842;}
+
+.char-cards{
+  display:flex;gap:16px;flex-wrap:wrap;justify-content:center;
+  margin-top:6px;
+}
+.char-card{
+  width:100px;
+  background:rgba(255,255,255,0.06);
+  border:2px solid rgba(255,255,255,0.1);
+  border-radius:16px;
+  padding:14px 10px 10px;
+  cursor:pointer;
+  transition:border-color .2s,transform .15s,background .2s;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+}
+.char-card:hover,.char-card.active{
+  border-color:#f5c842;
+  background:rgba(245,200,66,0.1);
+  transform:scale(1.06);
+}
+.char-card img{width:64px;height:80px;object-fit:contain;}
+.char-card .cc-emoji{font-size:48px;line-height:1;}
+.char-card .cc-name{
+  font-family:'Space Mono',monospace;
+  font-size:10px;color:#f5c842;
+  letter-spacing:.05em;font-weight:700;
+  text-transform:uppercase;
+}
+
+.btn-start{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:22px;letter-spacing:.12em;
+  padding:14px 48px;border:none;border-radius:12px;cursor:pointer;
+  background:linear-gradient(135deg,#b8860b,#f5c842);
+  color:#07070c;
+  box-shadow:0 0 28px rgba(245,200,66,.25);
+  transition:transform .15s,box-shadow .15s;
+  margin-top:6px;
+}
+.btn-start:hover{transform:scale(1.05);box-shadow:0 0 40px rgba(245,200,66,.4);}
+
+/* RESULT OVERLAY */
+.res-title{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(36px,9vw,58px);
+  letter-spacing:.06em;line-height:1.1;
+}
+.res-title.win{color:#f5c842;text-shadow:0 0 40px rgba(245,200,66,.5);}
+.res-title.lose{color:#8888a0;}
+.res-eggs{font-size:44px;}
+.res-sub{font-size:14px;color:#8888a0;max-width:280px;line-height:1.65;}
+.res-coin{
+  font-family:'Space Mono',monospace;font-size:17px;font-weight:700;
+  color:#f5c842;
+  background:rgba(245,200,66,.1);
+  border:1px solid rgba(245,200,66,.3);
+  border-radius:12px;padding:10px 24px;letter-spacing:.06em;
+}
+.res-hearts{display:flex;gap:5px;justify-content:center;font-size:22px;}
+.btn-again{
+  font-family:'Bebas Neue',sans-serif;font-size:21px;letter-spacing:.1em;
+  padding:13px 44px;border:none;border-radius:12px;cursor:pointer;
+  background:linear-gradient(135deg,#b8860b,#f5c842);
+  color:#07070c;
+  box-shadow:0 0 24px rgba(245,200,66,.2);
+  transition:transform .15s;
+  margin-top:4px;
+}
+.btn-again:hover{transform:scale(1.05);}
+
+/* MOBILE BTNS */
+#m-ctrls{
+  position:fixed;bottom:14px;left:0;right:0;
+  display:none;
+  justify-content:space-between;
+  padding:0 20px;z-index:200;
+}
+@media(pointer:coarse){#m-ctrls{display:flex;}}
+.m-btn{
+  width:76px;height:76px;border-radius:50%;
+  background:rgba(0,0,0,0.18);
+  border:2px solid rgba(255,255,255,0.25);
+  font-size:30px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:#fff;
+  box-shadow:0 4px 16px rgba(0,0,0,0.2);
+  -webkit-tap-highlight-color:transparent;
+}
+.m-btn:active{background:rgba(245,200,66,.35);}
+</style>
+</head>
+<body>
+
+<!-- ===== LOAD SCREEN ===== -->
+<div id="load-screen">
+  <div class="load-logo">VIPERR<br><span>ЯЙЦЕЛОВ</span></div>
+  <div class="load-sub">Лови яйца в корзинку.<br>Собери <b>10 яиц</b> за 60 секунд — и +1 VMG коин 🏆</div>
+  <div class="load-bar-wrap"><div class="load-bar-fill"></div></div>
+  <div class="load-hint">загрузка...</div>
+</div>
+
+<!-- ===== DAMAGE FLASH ===== -->
+<div id="dmg-flash"></div>
+
+<!-- ===== GAME ===== -->
+<div id="game" class="blurred">
+  <!-- HUD -->
+  <div class="hud">
+    <div class="hud-timer" id="timer-el">1:00</div>
+    <div class="hud-eggs">🥚 <span id="egg-count">0</span>/10</div>
+    <div class="hud-hp">
+      <div class="hp-heart" id="h1">❤️</div>
+      <div class="hp-heart" id="h2">❤️</div>
+      <div class="hp-heart" id="h3">❤️</div>
+    </div>
+  </div>
+
+  <!-- FIELD -->
+  <div id="field">
+    <!-- shelves — injected by JS -->
+    <!-- player -->
+    <div id="player-wrap">
+      <div id="basket-zone"></div>
+      <img id="player-img" src="IMG_20260620_221002_447.PNG" alt="player"
+        onerror="this.style.display='none';document.getElementById('player-fallback').style.display='flex'">
+      <div id="player-fallback">
+        <span>🧢</span>
+        <span>🧍</span>
+      </div>
+    </div>
+    <div class="ground"></div>
+  </div>
+</div>
+
+<!-- ===== SELECT OVERLAY ===== -->
+<div class="overlay show" id="select-overlay">
+  <div class="sel-title">VIPERR<br><span>ЯЙЦЕЛОВ</span></div>
+  <div class="sel-desc">Лови <b>яйца</b> в корзинку на голове.<br>Избегай плохие предметы — потеряешь ❤️</div>
+  <div class="char-cards">
+    <div class="char-card active" id="card-main" onclick="selectChar('main')">
+      <img src="IMG_20260620_221002_447.PNG"
+        onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+      <span style="display:none;font-size:48px;">🧍</span>
+      <div class="cc-name">ТЫ</div>
+    </div>
+  </div>
+  <button class="btn-start" id="btn-play">НАЧАТЬ ИГРУ</button>
+</div>
+
+<!-- ===== RESULT OVERLAY ===== -->
+<div class="overlay" id="result-overlay">
+  <div class="res-title" id="res-title">ОГО МОЛОДЕЦ</div>
+  <div class="res-eggs" id="res-eggs">🥚🥚🥚🥚🥚🥚🥚🥚🥚🥚</div>
+  <div class="res-hearts" id="res-hearts"></div>
+  <div class="res-sub" id="res-sub"></div>
+  <div class="res-coin" id="res-coin" style="display:none">🪙 +1 VMG КОИН</div>
+  <button class="btn-again" id="btn-again">ЕЩЁ РАЗ</button>
+</div>
+
+<!-- Mobile controls -->
+<div id="m-ctrls">
+  <div class="m-btn" id="btn-l">◀</div>
+  <div class="m-btn" id="btn-r">▶</div>
+</div>
+
+<audio id="bgm" src="song3.mp3" loop></audio>
+
+<script>
+// ============================================================
+//  CONFIG
+// ============================================================
+const TOTAL_EGGS   = 10;
+const GAME_TIME    = 60;   // seconds
+const MAX_HP       = 3;
+const LANES        = 3;    // shelves
+const GOOD_CHANCE  = 0.62; // probability egg vs bad item
+
+const GOOD_EMOJIS = ['🥚'];
+const BAD_EMOJIS  = ['🧱','💣','🔩','🪨','🥾','⚙️','🔧','🌵'];
+
+// ============================================================
+//  DOM
+// ============================================================
+const gameEl      = document.getElementById('game');
+const fieldEl     = document.getElementById('field');
+const playerWrap  = document.getElementById('player-wrap');
+const timerEl     = document.getElementById('timer-el');
+const eggCountEl  = document.getElementById('egg-count');
+const bgm         = document.getElementById('bgm');
+const dmgFlash    = document.getElementById('dmg-flash');
+const selectOv    = document.getElementById('select-overlay');
+const resultOv    = document.getElementById('result-overlay');
+
+// ============================================================
+//  STATE
+// ============================================================
+let hp, eggs, timeLeft, gameRunning;
+let tickInt, spawnInt;
+let playerX  = 50; // % across field
+let shelfData = []; // {y, el}
+const keys = {left:false, right:false};
+const SPEED = 0.65; // %/frame
+
+// ============================================================
+//  LOAD SCREEN → auto hide 3.6s
+// ============================================================
+const loadScr = document.getElementById('load-screen');
+setTimeout(()=>{
+  loadScr.classList.add('hide');
+  setTimeout(()=>loadScr.remove(), 750);
+}, 3600);
+
+// ============================================================
+//  SELECT CHAR
+// ============================================================
+function selectChar(id){
+  document.querySelectorAll('.char-card').forEach(c=>c.classList.remove('active'));
+  document.getElementById('card-'+id).classList.add('active');
+}
+
+document.getElementById('btn-play').addEventListener('click', ()=>{
+  selectOv.classList.remove('show');
+  gameEl.classList.remove('blurred');
+  beginRound();
+});
+
+// ============================================================
+//  BUILD SHELVES
+// ============================================================
+function buildShelves(){
+  // Remove old
+  fieldEl.querySelectorAll('.shelf,.chicken').forEach(e=>e.remove());
+  shelfData = [];
+
+  const fh = fieldEl.clientHeight;
+  // 3 shelves, evenly distributed in top 75% of field
+  // ground takes 60px at bottom
+  const usable = fh - 60; // above ground
+  // lane positions (from top): 25%, 45%, 65% of usable
+  const positions = [0.22, 0.42, 0.63];
+
+  positions.forEach((pct, i)=>{
+    const y = Math.round(usable * pct);
+    const shelf = document.createElement('div');
+    shelf.className = 'shelf';
+    shelf.style.top = y + 'px';
+    fieldEl.appendChild(shelf);
+
+    // chickens on left and right
+    const sides = [8, 70]; // % from left
+    sides.forEach(lp=>{
+      const ch = document.createElement('div');
+      ch.className = 'chicken';
+      ch.textContent = '🐔';
+      ch.style.left = lp + '%';
+      ch.style.top = (y - 26) + 'px';
+      ch.style.animationDelay = (Math.random()*.5)+'s';
+      fieldEl.appendChild(ch);
+    });
+
+    shelfData.push({y, idx:i});
+  });
+}
+
+// ============================================================
+//  BEGIN ROUND
+// ============================================================
+function beginRound(){
+  hp = MAX_HP;
+  eggs = 0;
+  timeLeft = GAME_TIME;
+  gameRunning = true;
+  updateHP();
+  eggCountEl.textContent = '0';
+  timerEl.textContent = '1:00';
+  timerEl.classList.remove('low');
+  clearItems();
+  buildShelves();
+
+  // Place player on ground
+  placePlayerOnGround();
+  setPlayerLeft();
+
+  bgm.currentTime = 0;
+  bgm.volume = 0.55;
+  bgm.play().catch(()=>{});
+
+  clearInterval(tickInt);
+  tickInt = setInterval(doTick, 1000);
+
+  clearInterval(spawnInt);
+  spawnInt = setInterval(spawnItem, 850);
+
+  requestAnimationFrame(loop);
+}
+
+function placePlayerOnGround(){
+  const fh = fieldEl.clientHeight;
+  const ph = playerWrap.offsetHeight || 110;
+  playerWrap.style.bottom = '60px'; // sit on ground
+  playerWrap.style.top = 'auto';
+  playerX = 50;
+}
+
+// ============================================================
+//  GAME LOOP
+// ============================================================
+let lastTs = 0;
+function loop(ts){
+  if(!gameRunning) return;
+  const dt = Math.min((ts - lastTs) / 16.67, 3);
+  lastTs = ts;
+
+  if(keys.left)  playerX = Math.max(0, playerX - SPEED*dt);
+  if(keys.right) playerX = Math.min(100, playerX + SPEED*dt);
+  setPlayerLeft();
+
+  checkCollisions();
+  requestAnimationFrame(loop);
+}
+
+function setPlayerLeft(){
+  const fw = fieldEl.clientWidth;
+  const pw = playerWrap.offsetWidth || 90;
+  const maxL = fw - pw;
+  playerWrap.style.left = ((playerX/100)*maxL) + 'px';
+}
+
+// ============================================================
+//  TIMER
+// ============================================================
+function doTick(){
+  if(!gameRunning) return;
+  timeLeft--;
+  const m = Math.floor(timeLeft/60);
+  const s = timeLeft%60;
+  timerEl.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  timerEl.classList.toggle('low', timeLeft<=15);
+  if(timeLeft<=0) endGame();
+}
+
+// ============================================================
+//  SPAWN ITEMS — fall from shelves or top
+// ============================================================
+function spawnItem(){
+  if(!gameRunning) return;
+  const fw = fieldEl.clientWidth;
+
+  const isGood = Math.random() < GOOD_CHANCE;
+  const emoji  = isGood
+    ? GOOD_EMOJIS[0]
+    : BAD_EMOJIS[Math.floor(Math.random()*BAD_EMOJIS.length)];
+
+  const el = document.createElement('div');
+  el.className = 'item ' + (isGood ? 'spin' : 'wobble');
+  el.textContent = emoji;
+  el.dataset.good = isGood ? '1' : '0';
+  el.dataset.caught = '0';
+
+  // start from one of the shelves or top
+  let startY;
+  if(shelfData.length && Math.random() < 0.75){
+    const sh = shelfData[Math.floor(Math.random()*shelfData.length)];
+    startY = sh.y + 14;
+  } else {
+    startY = -40;
+  }
+
+  const leftPct = 4 + Math.random()*90;
+  el.style.left = leftPct + '%';
+  el.style.top  = startY + 'px';
+  el.dataset.y  = startY;
+  el.dataset.xpct = leftPct;
+  el.dataset.spd  = (isGood ? 2.2+Math.random()*1.6 : 3+Math.random()*2).toFixed(2);
+
+  fieldEl.appendChild(el);
+  dropItem(el);
+}
+
+function dropItem(el){
+  function frame(){
+    if(!gameRunning){el.remove();return;}
+    if(el.dataset.caught==='1') return;
+    const y = parseFloat(el.dataset.y) + parseFloat(el.dataset.spd);
+    el.dataset.y = y;
+    el.style.top = y+'px';
+    if(y > fieldEl.clientHeight+10){el.remove();return;}
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+// ============================================================
+//  COLLISION
+// ============================================================
+function checkCollisions(){
+  const fw = fieldEl.clientWidth;
+  const fh = fieldEl.clientHeight;
+  const pw = playerWrap.offsetWidth  || 90;
+  const ph = playerWrap.offsetHeight || 110;
+  const pLeft = (playerX/100)*(fw-pw);
+
+  // basket zone: top ~22% of player height, 70% wide centered
+  const bzLeft  = pLeft + pw*0.15;
+  const bzRight = pLeft + pw*0.85;
+  const bzTop   = fh - 60 - ph;           // absolute top of player in field
+  const bzBot   = bzTop + ph*0.25;
+
+  fieldEl.querySelectorAll('.item').forEach(el=>{
+    if(el.dataset.caught==='1') return;
+    const xpct  = parseFloat(el.dataset.xpct);
+    const ix    = (xpct/100)*fw;
+    const iy    = parseFloat(el.dataset.y);
+    const iSize = 34;
+
+    const hit = (ix+iSize > bzLeft) && (ix < bzRight)
+             && (iy+iSize > bzTop)  && (iy < bzBot+30);
+
+    if(hit){
+      el.dataset.caught='1';
+      const cx = ix + iSize/2;
+      const cy = iy;
+      el.remove();
+      if(el.dataset.good==='1') onCatch(cx,cy);
+      else                       onHit(cx,cy);
+    }
+  });
+}
+
+function onCatch(cx,cy){
+  eggs++;
+  eggCountEl.textContent = eggs;
+  spawnFlash('+🥚', cx, cy, true);
+  spawnBurst(cx, cy, '#f5c842');
+  if(eggs>=TOTAL_EGGS) endGame(true);
+}
+
+function onHit(cx,cy){
+  hp--;
+  updateHP();
+  spawnFlash('−❤️', cx, cy, false);
+  dmgFlash.classList.add('on');
+  setTimeout(()=>dmgFlash.classList.remove('on'), 180);
+  if(hp<=0) endGame(false,true);
+}
+
+function updateHP(){
+  for(let i=1;i<=3;i++)
+    document.getElementById('h'+i).classList.toggle('lost', i>hp);
+}
+
+// ============================================================
+//  VFX
+// ============================================================
+function spawnFlash(txt, x, y, good){
+  const d = document.createElement('div');
+  d.className='flash-txt '+(good?'good':'bad');
+  d.textContent=txt;
+  d.style.left=x+'px'; d.style.top=y+'px';
+  fieldEl.appendChild(d);
+  setTimeout(()=>d.remove(),750);
+}
+
+function spawnBurst(x,y,color){
+  for(let i=0;i<8;i++){
+    const p=document.createElement('div');
+    p.style.cssText=`position:absolute;width:5px;height:5px;border-radius:50%;background:${color};
+      left:${x}px;top:${y}px;pointer-events:none;z-index:60;
+      animation:stb .5s ease-out forwards;`;
+    const ang=(i/8)*Math.PI*2;
+    const d=28+Math.random()*20;
+    p.style.setProperty('--tx',`translate(${Math.cos(ang)*d}px,${Math.sin(ang)*d}px)`);
+    fieldEl.appendChild(p);
+    setTimeout(()=>p.remove(),550);
+  }
+}
+
+// inject keyframe for burst
+const bStyle=document.createElement('style');
+bStyle.textContent=`@keyframes stb{0%{opacity:1;transform:scale(1) translate(0,0);}100%{opacity:0;transform:scale(0) var(--tx);}}`;
+document.head.appendChild(bStyle);
+
+// ============================================================
+//  END GAME
+// ============================================================
+function endGame(win, dead){
+  if(!gameRunning) return;
+  gameRunning=false;
+  clearInterval(tickInt);
+  clearInterval(spawnInt);
+  bgm.pause();
+  gameEl.classList.add('blurred');
+
+  const won = win || eggs>=TOTAL_EGGS;
+
+  const titleEl  = document.getElementById('res-title');
+  const eggsEl   = document.getElementById('res-eggs');
+  const subEl    = document.getElementById('res-sub');
+  const coinEl   = document.getElementById('res-coin');
+  const heartsEl = document.getElementById('res-hearts');
+
+  heartsEl.innerHTML='';
+  for(let i=1;i<=3;i++) heartsEl.innerHTML+=`<span>${i<=hp?'❤️':'🖤'}</span>`;
+
+  if(won){
+    titleEl.textContent='ОГО МОЛОДЕЦ';
+    titleEl.className='res-title win';
+    eggsEl.textContent='🥚'.repeat(10);
+    subEl.textContent='Ты поймал все 10 яиц! Виперр доволен 🏆';
+    coinEl.style.display='block';
+  } else {
+    titleEl.textContent = dead ? 'ОЙ, БОЛЬНО...' : 'ЭХ БРО';
+    titleEl.className='res-title lose';
+    eggsEl.textContent='🥚'.repeat(eggs)+(eggs<10?'🩶'.repeat(10-eggs):'');
+    subEl.textContent = dead
+      ? `Тебя уничтожили! Поймано: ${eggs}/10 яиц`
+      : `Неудача, в следующий раз повезёт.\nПоймано: ${eggs}/10 яиц`;
+    coinEl.style.display='none';
+  }
+
+  resultOv.classList.add('show');
+}
+
+document.getElementById('btn-again').addEventListener('click',()=>{
+  resultOv.classList.remove('show');
+  gameEl.classList.remove('blurred');
+  clearItems();
+  beginRound();
+});
+
+// ============================================================
+//  CLEAR
+// ============================================================
+function clearItems(){
+  fieldEl.querySelectorAll('.item,.flash-txt').forEach(e=>e.remove());
+}
+
+// ============================================================
+//  INPUT
+// ============================================================
+document.addEventListener('keydown', e=>{
+  if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')  keys.left=true;
+  if(e.key==='ArrowRight'||e.key==='d'||e.key==='D') keys.right=true;
+});
+document.addEventListener('keyup', e=>{
+  if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')  keys.left=false;
+  if(e.key==='ArrowRight'||e.key==='d'||e.key==='D') keys.right=false;
+});
+
+// Mobile buttons
+const bL=document.getElementById('btn-l');
+const bR=document.getElementById('btn-r');
+bL.addEventListener('touchstart',e=>{e.preventDefault();keys.left=true;},{passive:false});
+bL.addEventListener('touchend',  ()=>keys.left=false);
+bR.addEventListener('touchstart',e=>{e.preventDefault();keys.right=true;},{passive:false});
+bR.addEventListener('touchend',  ()=>keys.right=false);
+bL.addEventListener('mousedown', ()=>keys.left=true);
+bL.addEventListener('mouseup',   ()=>keys.left=false);
+bR.addEventListener('mousedown', ()=>keys.right=true);
+bR.addEventListener('mouseup',   ()=>keys.right=false);
+
+// Touch drag on field
+fieldEl.addEventListener('touchmove', e=>{
+  if(!gameRunning) return;
+  e.preventDefault();
+  const tx=e.touches[0].clientX;
+  const fw=fieldEl.clientWidth;
+  const pw=playerWrap.offsetWidth||90;
+  playerX=Math.max(0,Math.min(100,(tx-pw/2)/(fw-pw)*100));
+},{passive:false});
+</script>
+</body>
+  </html>
