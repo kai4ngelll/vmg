@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Viperr Game — Jump</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--bg:#07070c;--s1:#0f0f16;--s2:#161620;--red:#c0392b;--accent:#e04444;--t1:#eeeef4;--t2:#8888a0;--t3:#484858;}
+html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Space Mono',monospace;-webkit-tap-highlight-color:transparent;user-select:none;touch-action:none;}
+
+/* LOAD */
+#load-screen{position:fixed;inset:0;z-index:500;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:30px;text-align:center;transition:opacity .6s;}
+#load-screen.hide{opacity:0;pointer-events:none;}
+.load-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,7vw,44px);letter-spacing:.08em;color:#fff;text-shadow:0 0 40px rgba(192,57,43,.4);}
+.load-title span{color:var(--accent);}
+.load-msg{font-size:13px;line-height:1.7;color:var(--t2);max-width:300px;}
+.load-msg b{color:var(--accent);}
+.load-bar-wrap{width:min(260px,70vw);height:3px;background:rgba(255,255,255,.08);border-radius:10px;overflow:hidden;}
+.load-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--red),var(--accent));border-radius:10px;animation:loadfill 3s linear forwards;}
+@keyframes loadfill{to{width:100%;}}
+
+/* MENU */
+#menu{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:30px;background:radial-gradient(ellipse at 50% 30%,rgba(192,57,43,.18) 0%,transparent 60%),linear-gradient(180deg,#0a0a10,#050508);}
+#menu.hidden{display:none;}
+.menu-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,10vw,58px);letter-spacing:.08em;color:#fff;text-shadow:0 0 40px rgba(192,57,43,.5);text-align:center;}
+.menu-title span{color:var(--accent);}
+.menu-sub{font-size:9px;letter-spacing:.3em;color:var(--t3);text-transform:uppercase;}
+.menu-char{width:min(130px,33vw);filter:drop-shadow(0 0 28px rgba(192,57,43,.45));animation:mfloat 2.2s ease-in-out infinite;}
+@keyframes mfloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+.mbtn{display:flex;align-items:center;justify-content:center;gap:8px;border:none;border-radius:13px;padding:14px 0;width:min(240px,80vw);font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;}
+.mbtn-play{background:linear-gradient(135deg,var(--red),var(--accent));color:#fff;box-shadow:0 10px 40px rgba(192,57,43,.4);animation:ppulse 2s infinite;}
+@keyframes ppulse{0%{box-shadow:0 0 0 0 rgba(192,57,43,.5),0 10px 40px rgba(192,57,43,.4);}70%{box-shadow:0 0 0 16px rgba(192,57,43,0),0 10px 40px rgba(192,57,43,.4);}100%{box-shadow:0 0 0 0 rgba(192,57,43,0),0 10px 40px rgba(192,57,43,.4);};}
+.mbtn-back{background:transparent;border:1px solid rgba(192,57,43,.5);color:var(--t2);text-decoration:none;}
+
+/* HUD */
+#hud{position:fixed;top:0;left:0;right:0;z-index:10;padding:14px 20px;display:none;justify-content:space-between;align-items:flex-start;pointer-events:none;}
+#hud.on{display:flex;}
+.hud-block{display:flex;flex-direction:column;gap:2px;}
+.hud-lbl{font-size:8px;letter-spacing:.3em;color:var(--t3);text-transform:uppercase;}
+.hud-val{font-family:'Bebas Neue',sans-serif;font-size:32px;color:#fff;line-height:1;text-shadow:0 0 18px rgba(192,57,43,.5);}
+.hud-right{align-items:flex-end;}
+
+/* DEATH */
+#death{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .45s;background:rgba(7,7,12,.8);}
+#death.on{opacity:1;pointer-events:auto;}
+.dcard{background:linear-gradient(135deg,var(--s1),var(--s2));border:1px solid rgba(192,57,43,.35);border-radius:20px;padding:34px 26px;width:min(330px,92vw);text-align:center;position:relative;overflow:hidden;transform:scale(.85);transition:transform .45s cubic-bezier(.34,1.56,.64,1);}
+#death.on .dcard{transform:scale(1);}
+.dcard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--red),transparent);}
+.dcard-eye{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.3em;color:var(--t3);text-transform:uppercase;margin-bottom:10px;}
+.dcard-title{font-family:'Bebas Neue',sans-serif;font-size:46px;color:#fff;text-shadow:0 0 28px rgba(192,57,43,.5);line-height:1;margin-bottom:4px;}
+.dcard-scores{display:flex;justify-content:center;gap:32px;margin:16px 0 24px;}
+.dscore{display:flex;flex-direction:column;gap:3px;}
+.dscore-val{font-family:'Bebas Neue',sans-serif;font-size:34px;color:#fff;line-height:1;}
+.dscore-val.hi{color:var(--accent);}
+.dscore-lbl{font-size:8px;letter-spacing:.2em;color:var(--t3);text-transform:uppercase;}
+.dbtns{display:flex;flex-direction:column;gap:9px;}
+.dbtn{display:flex;align-items:center;justify-content:center;border:none;border-radius:12px;padding:13px;width:100%;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;}
+.dbtn-play{background:linear-gradient(135deg,var(--red),var(--accent));color:#fff;}
+.dbtn-home{background:transparent;border:1px solid rgba(192,57,43,.45);color:var(--t2);text-decoration:none;}
+#newbest{position:fixed;top:38%;left:50%;transform:translate(-50%,-50%);font-family:'Bebas Neue',sans-serif;font-size:clamp(26px,7vw,40px);color:var(--accent);text-shadow:0 0 30px rgba(192,57,43,.7);pointer-events:none;opacity:0;z-index:150;white-space:nowrap;transition:opacity .3s;}
+#newbest.on{opacity:1;}
+canvas{position:fixed;inset:0;width:100%;height:100%;}
+</style>
+</head>
+<body>
+
+<div id="load-screen">
+  <div class="load-title">Viperr <span>Game</span></div>
+  <div class="load-msg"><b>Сука делай jump</b> — тапай экран чтобы прыгать от стены к стене!</div>
+  <div class="load-bar-wrap"><div class="load-bar-fill"></div></div>
+</div>
+
+<div id="menu" class="hidden">
+  <div class="menu-title">Viperr <span>Jump</span></div>
+  <div class="menu-sub">Wall Kickers</div>
+  <img class="menu-char" src="skin3_lambo.png" alt="">
+  <button class="mbtn mbtn-play" onclick="startGame()">▶ &nbsp;Играть</button>
+  <a class="mbtn mbtn-back" href="index.html">← На главную</a>
+</div>
+
+<div id="hud">
+  <div class="hud-block">
+    <div class="hud-lbl">Счёт</div>
+    <div class="hud-val" id="hScore">0</div>
+  </div>
+  <div class="hud-block hud-right">
+    <div class="hud-lbl">Рекорд</div>
+    <div class="hud-val" id="hBest">0</div>
+  </div>
+</div>
+
+<canvas id="c"></canvas>
+
+<div id="death">
+  <div class="dcard">
+    <div class="dcard-eye">Game Over</div>
+    <div class="dcard-title">Упал 💀</div>
+    <div class="dcard-scores">
+      <div class="dscore"><div class="dscore-val hi" id="dScore">0</div><div class="dscore-lbl">Счёт</div></div>
+      <div class="dscore"><div class="dscore-val" id="dBest">0</div><div class="dscore-lbl">Рекорд</div></div>
+    </div>
+    <div class="dbtns">
+      <button class="dbtn dbtn-play" onclick="restartGame()">▶ &nbsp;Начать снова</button>
+      <a class="dbtn dbtn-home" href="index.html">← На главную</a>
+    </div>
+  </div>
+</div>
+<div id="newbest">🔥 НОВЫЙ РЕКОРД!</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+
+// ── Background music ────────────────────────────────────────
+const bgMusic = new Audio('song4.mp3');
+bgMusic.loop = true;
+function playMusic(){
+  bgMusic.currentTime = 0;
+  bgMusic.play().catch(()=>{});
+}
+function stopMusic(){
+  bgMusic.pause();
+}
+
+// ── Character image ─────────────────────────────────────────
+const charImg = new Image();
+charImg.src   = 'skin3_lambo.png';
+const CW = 44, CH = 72; // render size
+
+// ── Screen ─────────────────────────────────────────────────
+let W, H;
+function resize(){ W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+window.addEventListener('resize', resize); resize();
+
+// ── Constants ──────────────────────────────────────────────
+const WALL_W      = 48;      // side wall width
+const PLAT_DEPTH  = 68;      // how far platform juts inward
+const PLAT_H      = 16;
+const GRAVITY     = 0.6;
+const SLIDE_GRAV  = 0.22;    // gravity while sliding on wall
+const SLIDE_MAX   = 3.8;     // max slide speed
+const JUMP_VX     = 10;
+const JUMP_VY     = -15.5;
+const BASE_SCROLL = 0;       // platforms don't auto-scroll at start
+// Difficulty ramp: every N points scroll speed increases
+const SPEED_PER_SCORE = 0.04; // pixels/frame added per score point
+const MAX_SCROLL_SPEED = 7.0;
+
+// ── State ───────────────────────────────────────────────────
+let best = parseInt(localStorage.getItem('vg3_best') || '0');
+let score, gameRunning, raf, scrollSpeed;
+let player = {}, platforms = [], particles = [], bgStars = [];
+let camY = 0, highestWorldY = 0;
+let frameCount = 0;
+
+// ── Loading screen ──────────────────────────────────────────
+setTimeout(()=>{
+  const ls = document.getElementById('load-screen');
+  ls.classList.add('hide');
+  setTimeout(()=>{ ls.style.display='none'; document.getElementById('menu').classList.remove('hidden'); }, 650);
+}, 3100);
+
+// ── Input ───────────────────────────────────────────────────
+window.addEventListener('pointerdown', e=>{ e.preventDefault(); if(gameRunning && !player.dead) onTap(); },{passive:false});
+window.addEventListener('keydown', e=>{ if((e.code==='Space'||e.code==='ArrowUp')&&gameRunning&&!player.dead){ e.preventDefault(); onTap(); }});
+
+function onTap(){ if(player.onWall) doJump(); }
+
+// ── Jump ────────────────────────────────────────────────────
+function doJump(){
+  const dir = player.side === 'left' ? 1 : -1;
+  player.vx    = dir * JUMP_VX;
+  player.vy    = JUMP_VY;
+  player.onWall = false;
+  player.facing = dir;
+  // flip animation
+  player.spinning    = true;
+  player.flipPhase   = 0;
+  player.flipFlipped = false;
+  // launch squash
+  player.scaleX = 0.55; player.scaleY = 1.4;
+  // particles
+  burst(player.x, player.y, 10, ['#e04444','#ff7b6b','#fff','#ffb347']);
+}
+
+// ── Init ────────────────────────────────────────────────────
+function initPlayer(){
+  player = {
+    x: WALL_W + CW/2 + 2, y: 0, // world y, set in startGame
+    vx:0, vy:0,
+    onWall:true, side:'left', facing:1, dead:false,
+    // flip
+    spinning:false, flipPhase:0, flipFlipped:false,
+    scaleX:1, scaleY:1,
+    // death tumble
+    deathVx:0, deathVy:0, deathAngle:0, deathSpin:0,
+    trail:[]
+  };
+}
+
+// Place platforms.  World Y: negative = upward.
+// Camera: camY = world y of screen top.
+function buildPlatforms(){
+  platforms = [];
+  // A few easy starter platforms close together
+  const startGaps  = [100, 110, 115, 120, 125];
+  const normalGaps = () => 130 + Math.random() * 80;
+
+  let wy = -100; // first platform slightly above start
+  let side = 'right';
+  for(let i = 0; i < 300; i++){
+    const gap  = i < startGaps.length ? startGaps[i] : normalGaps();
+    wy -= gap;
+    const px   = side === 'left' ? WALL_W : W - WALL_W - PLAT_DEPTH;
+    const pLen = 54 + Math.random() * 60; // varied lengths
+    // moving: after score ~5 some platforms move up/down
+    const moves = i > 6 && Math.random() < 0.45;
+    platforms.push({
+      x: px, y: wy,
+      w: PLAT_DEPTH, h: PLAT_H,
+      side,
+      // movement
+      moves,
+      moveAmp:  moves ? (18 + Math.random() * 28) : 0,
+      moveSpeed:moves ? (0.012 + Math.random() * 0.022) : 0,
+      movePhase:Math.random() * Math.PI * 2,
+      baseY: wy,
+      // visual variety
+      color: side === 'left' ? '#c0392b' : '#8e44ad',
+    });
+    side = side === 'left' ? 'right' : 'left';
+  }
+}
+
+function genStars(){
+  bgStars = [];
+  for(let i=0;i<80;i++) bgStars.push({ x:Math.random()*2000-1000, wy:Math.random()*-8000, r:0.5+Math.random()*1.5, a:0.2+Math.random()*0.5 });
+}
+
+function startGame(){
+  document.getElementById('menu').classList.add('hidden');
+  document.getElementById('hud').classList.add('on');
+  playMusic();
+  score = 0; scrollSpeed = 0; frameCount = 0;
+  particles = [];
+  resize();
+  genStars();
+  initPlayer();
+  buildPlatforms();
+  // put player on left wall, camera so player is at 60% height
+  player.y  = H * 0.0; // world y = 0 is "ground"
+  camY      = player.y - H * 0.6;
+  highestWorldY = player.y;
+  document.getElementById('hScore').textContent = '0';
+  document.getElementById('hBest').textContent  = best;
+  gameRunning = true;
+  if(raf) cancelAnimationFrame(raf);
+  lastT = 0;
+  raf = requestAnimationFrame(loop);
+}
+
+function restartGame(){
+  document.getElementById('death').classList.remove('on');
+  document.getElementById('newbest').classList.remove('on');
+  setTimeout(startGame, 180);
+}
+
+// ── Score ───────────────────────────────────────────────────
+function updateScore(){
+  if(player.y < highestWorldY){
+    highestWorldY = player.y;
+    const risen = -highestWorldY;
+    score = Math.floor(risen / 80);
+    if(score > best){ best = score; localStorage.setItem('vg3_best', best); }
+    document.getElementById('hScore').textContent = score;
+    document.getElementById('hBest').textContent  = best;
+  }
+}
+
+// ── Particles ────────────────────────────────────────────────
+function burst(x, y, n, cols){
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2, s=1.5+Math.random()*4.5;
+    particles.push({ x, y, vx:Math.cos(a)*s, vy:Math.sin(a)*s-1.5,
+      life:1, maxLife:1, col:cols[Math.floor(Math.random()*cols.length)], r:2.5+Math.random()*3 });
+  }
+}
+
+// ── Collision ─────────────────────────────────────────────────
+function collide(){
+  if(player.dead) return;
+  const pl = player.x - CW/2, pr = player.x + CW/2;
+  const pt = player.y - CH/2, pb = player.y + CH/2;
+
+  // Left wall
+  if(pl <= WALL_W){
+    player.x = WALL_W + CW/2;
+    player.vx = 0;
+    landWall('left');
+    return;
+  }
+  // Right wall
+  if(pr >= W - WALL_W){
+    player.x = W - WALL_W - CW/2;
+    player.vx = 0;
+    landWall('right');
+    return;
+  }
+
+  // Platforms
+  for(const p of platforms){
+    if(p.side === 'left'){
+      const face = p.x + p.w;
+      if(pl < face + 4 && pl > face - CW*0.55 && player.vx <= 0){
+        if(pb > p.y && pt < p.y + p.h){
+          player.x = face + CW/2;
+          player.vx = 0;
+          landWall('left');
+          return;
+        }
+      }
+    }
+    if(p.side === 'right'){
+      const face = p.x;
+      if(pr > face - 4 && pr < face + CW*0.55 && player.vx >= 0){
+        if(pb > p.y && pt < p.y + p.h){
+          player.x = face - CW/2;
+          player.vx = 0;
+          landWall('right');
+          return;
+        }
+      }
+    }
+  }
+
+  player.onWall = false;
+}
+
+function landWall(side){
+  if(player.onWall && player.side === side) return; // already on this wall
+  player.onWall     = true;
+  player.side       = side;
+  player.spinning   = false;
+  player.flipPhase  = 0;
+  player.flipFlipped = false;
+  // Wall-hit squash
+  player.scaleX = 0.45; player.scaleY = 1.45;
+  burst(player.x, player.y, 6, ['#e04444','#ff9966','#fff']);
+}
+
+// ── Death ─────────────────────────────────────────────────────
+function die(){
+  if(player.dead) return;
+  player.dead = true; gameRunning = false;
+  stopMusic();
+  // tumble physics
+  player.deathVx    = player.vx * 0.5;
+  player.deathVy    = Math.min(player.vy, -3);
+  player.deathAngle = 0;
+  player.deathSpin  = (Math.random() > 0.5 ? 1 : -1) * (0.12 + Math.random() * 0.18);
+  burst(player.x, player.y, 22, ['#e04444','#ff7b6b','#ffb347','#fff','#c0392b']);
+
+  const newRec = score > 0 && score >= best;
+  document.getElementById('dScore').textContent = score;
+  document.getElementById('dBest').textContent  = best;
+  if(newRec){ document.getElementById('newbest').classList.add('on'); setTimeout(()=>document.getElementById('newbest').classList.remove('on'),2500); }
+  setTimeout(()=>document.getElementById('death').classList.add('on'), 900);
+}
+
+// ── Extend platforms ──────────────────────────────────────────
+function maybeExtend(){
+  const topNeeded = camY - H * 0.5;
+  let last = platforms[platforms.length-1];
+  while(!last || last.y > topNeeded){
+    const prev = platforms[platforms.length-1];
+    const gap  = 130 + Math.random() * 90 + Math.min(score * 0.5, 40);
+    const wy   = (prev ? prev.y : 0) - gap;
+    const side = prev ? (prev.side === 'left' ? 'right' : 'left') : 'right';
+    const px   = side === 'left' ? WALL_W : W - WALL_W - PLAT_DEPTH;
+    const moves = score > 5 && Math.random() < Math.min(0.15 + score*0.01, 0.6);
+    platforms.push({
+      x:px, y:wy, w:PLAT_DEPTH, h:PLAT_H, side,
+      moves, moveAmp:moves?(18+Math.random()*28):0,
+      moveSpeed:moves?(0.012+Math.random()*0.025):0,
+      movePhase:Math.random()*Math.PI*2, baseY:wy,
+      color: side==='left'?'#c0392b':'#8e44ad'
+    });
+    last = platforms[platforms.length-1];
+  }
+  // Cull below
+  const cutoff = camY + H + 600;
+  platforms = platforms.filter(p => p.y < cutoff);
+}
+
+// ── Draw ──────────────────────────────────────────────────────
+function drawBG(){
+  // Deep space gradient
+  const g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#03030a'); g.addColorStop(1,'#07070e');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+
+  // Stars
+  bgStars.forEach(s=>{
+    const sy = s.wy - camY;
+    if(sy<-10||sy>H+10) return;
+    ctx.beginPath(); ctx.arc(s.x % W, sy, s.r, 0, Math.PI*2);
+    ctx.fillStyle=`rgba(255,255,255,${s.a})`; ctx.fill();
+  });
+
+  // Subtle grid in play area
+  ctx.strokeStyle='rgba(255,255,255,0.018)'; ctx.lineWidth=1;
+  const sp=88, off=((-camY)%sp+sp)%sp;
+  for(let y=off;y<H+sp;y+=sp){ ctx.beginPath();ctx.moveTo(WALL_W,y);ctx.lineTo(W-WALL_W,y);ctx.stroke(); }
+}
+
+function drawWalls(){
+  // ── LEFT WALL ──
+  // Base
+  const lg=ctx.createLinearGradient(0,0,WALL_W,0);
+  lg.addColorStop(0,'#1c0a0a'); lg.addColorStop(1,'#0e0506');
+  ctx.fillStyle=lg; ctx.fillRect(0,0,WALL_W,H);
+  // Brick rows
+  const bH=28, bOff=((-camY)%bH+bH)%bH;
+  ctx.strokeStyle='rgba(255,255,255,0.045)'; ctx.lineWidth=1;
+  for(let y=bOff;y<H+bH;y+=bH){ ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(WALL_W,y);ctx.stroke(); }
+  for(let y=bOff;y<H+bH;y+=bH*2){ ctx.beginPath();ctx.moveTo(WALL_W/2,y);ctx.lineTo(WALL_W/2,y+bH);ctx.stroke(); }
+  // Inner edge glow
+  const lge=ctx.createLinearGradient(WALL_W-2,0,WALL_W+12,0);
+  lge.addColorStop(0,'rgba(192,57,43,0.8)'); lge.addColorStop(1,'rgba(192,57,43,0)');
+  ctx.fillStyle=lge; ctx.fillRect(WALL_W-2,0,14,H);
+  ctx.strokeStyle='rgba(224,68,68,0.9)'; ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(WALL_W,0);ctx.lineTo(WALL_W,H);ctx.stroke();
+
+  // ── RIGHT WALL ──
+  const rg=ctx.createLinearGradient(W,0,W-WALL_W,0);
+  rg.addColorStop(0,'#1c0a0a'); rg.addColorStop(1,'#0e0506');
+  ctx.fillStyle=rg; ctx.fillRect(W-WALL_W,0,WALL_W,H);
+  for(let y=bOff;y<H+bH;y+=bH){ ctx.beginPath();ctx.moveTo(W-WALL_W,y);ctx.lineTo(W,y);ctx.stroke(); }
+  for(let y=bOff;y<H+bH;y+=bH*2){ ctx.beginPath();ctx.moveTo(W-WALL_W/2,y);ctx.lineTo(W-WALL_W/2,y+bH);ctx.stroke(); }
+  const rge=ctx.createLinearGradient(W-WALL_W+2,0,W-WALL_W-12,0);
+  rge.addColorStop(0,'rgba(192,57,43,0.8)'); rge.addColorStop(1,'rgba(192,57,43,0)');
+  ctx.fillStyle=rge; ctx.fillRect(W-WALL_W-12,0,14,H);
+  ctx.strokeStyle='rgba(224,68,68,0.9)'; ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(W-WALL_W,0);ctx.lineTo(W-WALL_W,H);ctx.stroke();
+}
+
+function drawPlatforms(dt){
+  for(const p of platforms){
+    // update moving platform
+    if(p.moves){
+      p.y = p.baseY + Math.sin(frameCount * p.moveSpeed + p.movePhase) * p.moveAmp;
+    }
+    const sy = p.y - camY;
+    if(sy < -PLAT_H-20 || sy > H+20) continue;
+
+    const isLeft = p.side === 'left';
+    const innerX = isLeft ? p.x + p.w : p.x;
+
+    // Shadow under platform
+    ctx.fillStyle='rgba(0,0,0,0.35)';
+    ctx.fillRect(p.x+2, sy+p.h, p.w-4, 6);
+
+    // Body
+    const grad = ctx.createLinearGradient(p.x, sy, p.x+p.w, sy);
+    if(isLeft){
+      grad.addColorStop(0,'#3d1414'); grad.addColorStop(0.6,'#5c1e1e'); grad.addColorStop(1,'#7a2828');
+    } else {
+      grad.addColorStop(0,'#2a1040'); grad.addColorStop(0.4,'#3d1860'); grad.addColorStop(1,'#5a2888');
+    }
+    ctx.fillStyle=grad; ctx.fillRect(p.x, sy, p.w, p.h);
+
+    // Top highlight
+    ctx.fillStyle = isLeft ? 'rgba(224,68,68,0.6)' : 'rgba(180,100,255,0.6)';
+    ctx.fillRect(p.x, sy, p.w, 3);
+
+    // Inner face glow (where player lands)
+    const faceGrad = ctx.createLinearGradient(innerX-(isLeft?0:8), sy, innerX+(isLeft?8:0), sy);
+    faceGrad.addColorStop(0, isLeft?'rgba(224,68,68,1)':'rgba(180,100,255,1)');
+    faceGrad.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=faceGrad;
+    ctx.fillRect(isLeft?innerX-3:innerX, sy, 3, p.h);
+
+    // Glow halo
+    const glowR = ctx.createRadialGradient(innerX,sy+p.h/2,0,innerX,sy+p.h/2,32);
+    glowR.addColorStop(0, isLeft?'rgba(192,57,43,0.4)':'rgba(140,80,200,0.4)');
+    glowR.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=glowR;
+    ctx.beginPath();
+    ctx.ellipse(innerX, sy+p.h/2, 32, 20, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // Moving indicator: pulsing dot
+    if(p.moves){
+      const pulse = 0.4 + 0.4*Math.sin(frameCount*0.08);
+      ctx.beginPath();
+      ctx.arc(p.x+p.w/2, sy+p.h/2, 3, 0, Math.PI*2);
+      ctx.fillStyle=`rgba(255,220,80,${pulse})`;
+      ctx.fill();
+    }
+  }
+}
+
+function drawParticles(){
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.x+=p.vx; p.y+=p.vy; p.vy+=0.15; p.vx*=0.97; p.life-=0.035;
+    if(p.life<=0){particles.splice(i,1);continue;}
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r * p.life, 0, Math.PI*2);
+    ctx.fillStyle=p.col; ctx.globalAlpha=p.life*p.life; ctx.fill();
+    ctx.globalAlpha=1;
+  }
+}
+
+// wall-slide dust stream
+function maybeDust(){
+  if(!player.onWall || Math.abs(player.vy)<0.4 || Math.random()>0.3) return;
+  const dx = player.side==='left' ? -1 : 1;
+  const sy = player.y - camY;
+  particles.push({
+    x: player.x + dx*CW*0.5,
+    y: sy + CW*0.2 + Math.random()*CW*0.5,
+    vx: dx*(0.3+Math.random()*0.7), vy:-0.2+Math.random()*0.4,
+    life:0.6+Math.random()*0.3, maxLife:1,
+    col: player.side==='left'?'rgba(192,57,43,0.7)':'rgba(140,80,200,0.7)',
+    r:2
+  });
+}
+
+function drawPlayer(){
+  if(player.dead){
+    // Death tumble: physics-driven fall + spin
+    player.deathVy += 0.55;
+    player.deathVx *= 0.99;
+    player.x  += player.deathVx;
+    player.y  += player.deathVy;
+    player.deathAngle += player.deathSpin;
+    // Shrink as falls
+    const sy = player.y - camY;
+    const fadeY = Math.max(0, 1 - Math.max(0, sy - H*0.5) / (H*0.6));
+    if(fadeY <= 0) return;
+    ctx.save();
+    ctx.globalAlpha = fadeY;
+    ctx.translate(player.x, sy);
+    ctx.rotate(player.deathAngle);
+    ctx.scale(player.facing * fadeY, fadeY);
+    if(charImg.complete && charImg.naturalWidth>0)
+      ctx.drawImage(charImg,-CW/2,-CH/2,CW,CH);
+    else{ ctx.fillStyle='#e04444'; ctx.fillRect(-CW/2,-CH/2,CW,CH); }
+    ctx.restore();
+    return;
+  }
+
+  const cx = player.x;
+  const cy = player.y - camY;
+
+  // ── Recover wall-squash ──
+  player.scaleX += (1-player.scaleX)*0.2;
+  player.scaleY += (1-player.scaleY)*0.2;
+
+  // ── Flip / salto ──
+  // flipPhase 0→1 = one flip.
+  // scaleY: 1 at 0/1, collapses to ~0.08 at 0.5 (tucked), then opens again
+  // facing flips at 0.5 so looks like body went over
+  if(player.spinning){
+    player.flipPhase += 0.065; // snappy ~15 frames per flip
+    if(player.flipPhase >= 1){ player.flipPhase=0; player.flipFlipped=false; }
+    if(!player.flipFlipped && player.flipPhase>=0.5){ player.flipFlipped=true; player.facing*=-1; }
+  }
+
+  let flipSY=1, flipSX=1;
+  if(player.spinning){
+    const tuck = Math.sin(player.flipPhase*Math.PI); // 0→1→0
+    flipSY = 1 - tuck*0.88;  // 1→0.12→1  squish body
+    flipSX = 1 + tuck*0.5;   // widen when tucked
+  }
+
+  // ── Ghost trail ──
+  if(player.spinning){
+    player.trail.push({cx,cy,flipSY,flipSX,facing:player.facing,life:1});
+    if(player.trail.length>5) player.trail.shift();
+    player.trail.forEach((t,i)=>{
+      ctx.save();
+      ctx.globalAlpha=(i/player.trail.length)*0.22*t.life;
+      ctx.translate(t.cx,t.cy);
+      ctx.scale(t.facing*t.flipSX, t.flipSY);
+      if(charImg.complete&&charImg.naturalWidth>0)
+        ctx.drawImage(charImg,-CW/2,-CH/2,CW,CH);
+      ctx.restore();
+      t.life-=0.2;
+    });
+  } else { player.trail=[]; }
+
+  maybeDust();
+
+  // ── Main sprite ──
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(player.facing * player.scaleX * flipSX, player.scaleY * flipSY);
+  if(charImg.complete && charImg.naturalWidth>0)
+    ctx.drawImage(charImg,-CW/2,-CH/2,CW,CH);
+  else{ ctx.fillStyle='#e04444'; ctx.fillRect(-CW/2,-CH/2,CW,CH); }
+  ctx.restore();
+
+  // ── Wall grip glow ──
+  if(player.onWall){
+    const gx = player.side==='left' ? cx-CW/2 : cx+CW/2;
+    const col = player.side==='left'?'rgba(192,57,43,':'rgba(140,80,200,';
+    const gr = ctx.createRadialGradient(gx,cy,1,gx,cy,40);
+    gr.addColorStop(0,col+'0.55)'); gr.addColorStop(1,col+'0)');
+    ctx.fillStyle=gr; ctx.beginPath();
+    ctx.ellipse(gx,cy,40,28,0,0,Math.PI*2); ctx.fill();
+  }
+}
+
+// Speed indicator bar (top-center, thin)
+function drawSpeedBar(){
+  const pct = Math.min(scrollSpeed/MAX_SCROLL_SPEED,1);
+  if(pct<=0) return;
+  const bw=min(160,W*0.35), bh=3, bx=(W-bw)/2, by=10;
+  ctx.fillStyle='rgba(255,255,255,0.06)';
+  ctx.beginPath(); ctx.roundRect(bx,by,bw,bh,2); ctx.fill();
+  const fg=ctx.createLinearGradient(bx,0,bx+bw*pct,0);
+  fg.addColorStop(0,'#c0392b'); fg.addColorStop(1,'#ff7b6b');
+  ctx.fillStyle=fg;
+  ctx.beginPath(); ctx.roundRect(bx,by,bw*pct,bh,2); ctx.fill();
+}
+function min(a,b){return a<b?a:b;}
+
+// ── Main loop ─────────────────────────────────────────────────
+let lastT=0;
+function loop(t=0){
+  const dt = Math.min((t-lastT)/16.67, 3);
+  lastT=t; frameCount++;
+
+  if(gameRunning && !player.dead){
+    // Scroll speed ramps with score
+    scrollSpeed = Math.min(score * SPEED_PER_SCORE, MAX_SCROLL_SPEED);
+
+    // Scroll all platforms down (camera moves up = world scrolls down)
+    const scroll = scrollSpeed * dt;
+    platforms.forEach(p=>{ p.y += scroll; p.baseY += scroll; });
+    // move player down with scroll so it doesn't look like ground drops
+    // (actually in Wall Kickers the world scrolls and player must keep up)
+    // If player is on wall, also scroll them
+    if(player.onWall) player.y += scroll;
+
+    // Physics
+    if(player.onWall){
+      player.vy += GRAVITY * SLIDE_GRAV * dt;
+      player.vy  = Math.min(player.vy, SLIDE_MAX + scrollSpeed*0.3);
+      player.y  += player.vy * dt;
+    } else {
+      player.vy += GRAVITY * dt;
+      player.x  += player.vx * dt;
+      player.y  += player.vy * dt;
+    }
+
+    collide();
+    updateScore();
+
+    // Camera: follows player up only (don't scroll back down)
+    const targetCam = player.y - H*0.5;
+    if(targetCam < camY) camY += (targetCam-camY)*0.13*dt;
+    // But also scroll cam down with platforms
+    camY += scroll;
+
+    // Death: fell below screen
+    const screenY = player.y - camY;
+    if(screenY > H + 150) die();
+  } else if(player.dead){
+    // keep animating death tumble
+    player.deathVy += 0.55;
+    player.y += player.deathVy;
+  }
+
+  maybeExtend();
+
+  // ── Render ──
+  drawBG();
+  drawPlatforms(dt);
+  drawWalls();
+  drawParticles();
+  drawPlayer();
+  drawSpeedBar();
+
+  raf = requestAnimationFrame(loop);
+}
+
+document.getElementById('hBest').textContent = best;
+</script>
+</body>
+</html>
