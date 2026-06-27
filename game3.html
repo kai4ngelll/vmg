@@ -2,694 +2,882 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Viperr Game — Jump</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Viperr Game — Казик Вайперрят</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;700&family=Bebas+Neue&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
 <style>
-*{margin:0;padding:0;box-sizing:border-box;}
-:root{--bg:#07070c;--s1:#0f0f16;--s2:#161620;--red:#c0392b;--accent:#e04444;--t1:#eeeef4;--t2:#8888a0;--t3:#484858;}
-html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Space Mono',monospace;-webkit-tap-highlight-color:transparent;user-select:none;touch-action:none;}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#07070c;--s1:#0f0f16;--s2:#161620;--line:rgba(255,255,255,0.08);
+  --t1:#eeeef4;--t2:#8888a0;--t3:#484858;
+  --red:#c0392b;--accent:#e04444;--gold:#d4a843;--gold2:#f0c060;
+}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--t1);font-family:'Inter',sans-serif;position:relative;-webkit-tap-highlight-color:transparent;user-select:none;}
 
-/* LOAD */
-#load-screen{position:fixed;inset:0;z-index:500;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:30px;text-align:center;transition:opacity .6s;}
+/* LOADING */
+#load-screen{position:fixed;inset:0;z-index:500;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:30px;text-align:center;transition:opacity 0.6s ease;}
 #load-screen.hide{opacity:0;pointer-events:none;}
-.load-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,7vw,44px);letter-spacing:.08em;color:#fff;text-shadow:0 0 40px rgba(192,57,43,.4);}
+.load-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,7vw,44px);letter-spacing:0.08em;color:#fff;text-shadow:0 0 40px rgba(192,57,43,0.4);}
 .load-title span{color:var(--accent);}
-.load-msg{font-size:13px;line-height:1.7;color:var(--t2);max-width:300px;}
-.load-msg b{color:var(--accent);}
-.load-bar-wrap{width:min(260px,70vw);height:3px;background:rgba(255,255,255,.08);border-radius:10px;overflow:hidden;}
-.load-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--red),var(--accent));border-radius:10px;animation:loadfill 3s linear forwards;}
-@keyframes loadfill{to{width:100%;}}
+.load-sub{font-family:'Space Mono',monospace;font-size:12px;letter-spacing:0.22em;color:var(--gold);text-transform:uppercase;}
+.load-msg{font-size:13px;line-height:1.6;color:var(--t2);max-width:260px;}
+.load-bar-wrap{width:min(240px,68vw);height:3px;background:rgba(255,255,255,0.08);border-radius:10px;overflow:hidden;}
+.load-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--red),var(--accent));border-radius:10px;animation:loadfill 2.5s linear forwards;}
+@keyframes loadfill{0%{width:0%;}100%{width:100%;}}
 
-/* MENU */
-#menu{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:30px;background:radial-gradient(ellipse at 50% 30%,rgba(192,57,43,.18) 0%,transparent 60%),linear-gradient(180deg,#0a0a10,#050508);}
-#menu.hidden{display:none;}
-.menu-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,10vw,58px);letter-spacing:.08em;color:#fff;text-shadow:0 0 40px rgba(192,57,43,.5);text-align:center;}
-.menu-title span{color:var(--accent);}
-.menu-sub{font-size:9px;letter-spacing:.3em;color:var(--t3);text-transform:uppercase;}
-.menu-char{width:min(130px,33vw);filter:drop-shadow(0 0 28px rgba(192,57,43,.45));animation:mfloat 2.2s ease-in-out infinite;}
-@keyframes mfloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
-.mbtn{display:flex;align-items:center;justify-content:center;gap:8px;border:none;border-radius:13px;padding:14px 0;width:min(240px,80vw);font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;}
-.mbtn-play{background:linear-gradient(135deg,var(--red),var(--accent));color:#fff;box-shadow:0 10px 40px rgba(192,57,43,.4);animation:ppulse 2s infinite;}
-@keyframes ppulse{0%{box-shadow:0 0 0 0 rgba(192,57,43,.5),0 10px 40px rgba(192,57,43,.4);}70%{box-shadow:0 0 0 16px rgba(192,57,43,0),0 10px 40px rgba(192,57,43,.4);}100%{box-shadow:0 0 0 0 rgba(192,57,43,0),0 10px 40px rgba(192,57,43,.4);};}
-.mbtn-back{background:transparent;border:1px solid rgba(192,57,43,.5);color:var(--t2);text-decoration:none;}
+/* START SCREEN */
+#start-screen{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:20px;background:radial-gradient(ellipse at 50% 20%,rgba(192,57,43,0.18) 0%,transparent 60%),linear-gradient(180deg,#0a0a10 0%,#050508 100%);}
+#start-screen.hidden{display:none;}
+.start-eyebrow{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.35em;color:var(--t3);text-transform:uppercase;margin-bottom:8px;}
+.start-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(30px,8vw,50px);letter-spacing:0.08em;color:#fff;text-shadow:0 0 40px rgba(192,57,43,0.45);text-align:center;margin-bottom:4px;}
+.start-title span{color:var(--accent);}
+.start-subtitle{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.18em;color:var(--gold);text-transform:uppercase;margin-bottom:24px;text-align:center;}
+.char-select-row{display:flex;gap:14px;justify-content:center;margin-bottom:22px;flex-wrap:wrap;}
+.char-card{width:clamp(130px,38vw,158px);background:rgba(255,255,255,0.04);border:2px solid rgba(255,255,255,0.08);border-radius:16px;padding:12px 10px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:background 0.2s,border-color 0.25s,transform 0.15s,box-shadow 0.25s;position:relative;overflow:hidden;}
+.char-card:hover{background:rgba(192,57,43,0.1);border-color:rgba(192,57,43,0.45);transform:translateY(-3px);}
+.char-card.selected{background:rgba(192,57,43,0.18);border-color:var(--accent);box-shadow:0 0 28px rgba(192,57,43,0.35),0 0 0 1px var(--accent);}
+.char-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--red),transparent);opacity:0;transition:opacity 0.25s;}
+.char-card.selected::before{opacity:1;}
+.char-card-img{width:95px;height:105px;object-fit:contain;filter:drop-shadow(0 8px 24px rgba(0,0,0,0.7));transition:transform 0.2s;}
+.char-card:hover .char-card-img,.char-card.selected .char-card-img{transform:scale(1.06);}
+.char-card-name{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:0.06em;color:#fff;text-align:center;}
+.char-card-tag{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.18em;color:var(--t3);text-transform:uppercase;}
+.select-dot{width:9px;height:9px;border-radius:50%;border:2px solid var(--t3);margin-top:2px;transition:background 0.2s,border-color 0.2s;}
+.char-card.selected .select-dot{background:var(--accent);border-color:var(--accent);}
+.start-btn{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--red),var(--accent));border:none;border-radius:12px;padding:14px 34px;color:#fff;font-family:'Space Mono',monospace;font-size:12px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;cursor:pointer;box-shadow:0 10px 40px rgba(192,57,43,0.4);animation:playpulse 2s infinite;transition:transform 0.15s;}
+.start-btn:active{transform:scale(0.94);}
+.start-btn:disabled{opacity:0.38;pointer-events:none;animation:none;}
+@keyframes playpulse{0%{box-shadow:0 0 0 0 rgba(192,57,43,0.5),0 10px 40px rgba(192,57,43,0.4);}70%{box-shadow:0 0 0 16px rgba(192,57,43,0),0 10px 40px rgba(192,57,43,0.4);}100%{box-shadow:0 0 0 0 rgba(192,57,43,0),0 10px 40px rgba(192,57,43,0.4);}}
 
-/* HUD */
-#hud{position:fixed;top:0;left:0;right:0;z-index:10;padding:14px 20px;display:none;justify-content:space-between;align-items:flex-start;pointer-events:none;}
-#hud.on{display:flex;}
-.hud-block{display:flex;flex-direction:column;gap:2px;}
-.hud-lbl{font-size:8px;letter-spacing:.3em;color:var(--t3);text-transform:uppercase;}
-.hud-val{font-family:'Bebas Neue',sans-serif;font-size:32px;color:#fff;line-height:1;text-shadow:0 0 18px rgba(192,57,43,.5);}
-.hud-right{align-items:flex-end;}
+/* GAME SCREEN */
+#game-screen{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;background:radial-gradient(ellipse at 50% 0%,rgba(192,57,43,0.12) 0%,transparent 55%),linear-gradient(180deg,#080810 0%,#040408 100%);overflow:hidden;}
+#game-screen.hidden{display:none;}
+.poker-topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 7px;border-bottom:1px solid rgba(255,255,255,0.05);flex-shrink:0;}
+.poker-logo{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:0.08em;color:var(--accent);text-shadow:0 0 14px rgba(192,57,43,0.5);}
+.poker-logo-sub{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:0.22em;color:var(--gold);text-transform:uppercase;margin-top:-1px;}
+.pot-display{display:flex;flex-direction:column;align-items:center;}
+.pot-label{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.25em;color:var(--t3);text-transform:uppercase;}
+.pot-val{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold2);text-shadow:0 0 10px rgba(212,168,67,0.4);}
 
-/* DEATH */
-#death{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .45s;background:rgba(7,7,12,.8);}
-#death.on{opacity:1;pointer-events:auto;}
-.dcard{background:linear-gradient(135deg,var(--s1),var(--s2));border:1px solid rgba(192,57,43,.35);border-radius:20px;padding:34px 26px;width:min(330px,92vw);text-align:center;position:relative;overflow:hidden;transform:scale(.85);transition:transform .45s cubic-bezier(.34,1.56,.64,1);}
-#death.on .dcard{transform:scale(1);}
-.dcard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--red),transparent);}
-.dcard-eye{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.3em;color:var(--t3);text-transform:uppercase;margin-bottom:10px;}
-.dcard-title{font-family:'Bebas Neue',sans-serif;font-size:46px;color:#fff;text-shadow:0 0 28px rgba(192,57,43,.5);line-height:1;margin-bottom:4px;}
-.dcard-scores{display:flex;justify-content:center;gap:32px;margin:16px 0 24px;}
-.dscore{display:flex;flex-direction:column;gap:3px;}
-.dscore-val{font-family:'Bebas Neue',sans-serif;font-size:34px;color:#fff;line-height:1;}
-.dscore-val.hi{color:var(--accent);}
-.dscore-lbl{font-size:8px;letter-spacing:.2em;color:var(--t3);text-transform:uppercase;}
-.dbtns{display:flex;flex-direction:column;gap:9px;}
-.dbtn{display:flex;align-items:center;justify-content:center;border:none;border-radius:12px;padding:13px;width:100%;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;}
-.dbtn-play{background:linear-gradient(135deg,var(--red),var(--accent));color:#fff;}
-.dbtn-home{background:transparent;border:1px solid rgba(192,57,43,.45);color:var(--t2);text-decoration:none;}
-#newbest{position:fixed;top:38%;left:50%;transform:translate(-50%,-50%);font-family:'Bebas Neue',sans-serif;font-size:clamp(26px,7vw,40px);color:var(--accent);text-shadow:0 0 30px rgba(192,57,43,.7);pointer-events:none;opacity:0;z-index:150;white-space:nowrap;transition:opacity .3s;}
-#newbest.on{opacity:1;}
-canvas{position:fixed;inset:0;width:100%;height:100%;}
+/* OPPONENT AREA */
+.opponent-area{display:flex;align-items:flex-end;justify-content:center;padding:4px 12px 0;gap:12px;flex-shrink:0;height:clamp(105px,26vw,148px);position:relative;}
+.opp-char{height:100%;object-fit:contain;filter:drop-shadow(0 6px 26px rgba(0,0,0,0.85));flex-shrink:0;}
+.opp-info{display:flex;flex-direction:column;justify-content:flex-end;gap:3px;padding-bottom:6px;}
+.opp-name{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:0.06em;color:#fff;}
+.opp-chips{font-family:'Space Mono',monospace;font-size:10px;color:var(--gold);letter-spacing:0.08em;}
+.opp-cards{display:flex;gap:4px;padding-top:4px;}
+.opp-status{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.12em;color:var(--t3);text-transform:uppercase;min-height:18px;}
+
+/* COMMUNITY */
+.community-area{display:flex;flex-direction:column;align-items:center;gap:5px;padding:5px 12px;flex-shrink:0;position:relative;}
+.community-label{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.25em;color:var(--t3);text-transform:uppercase;}
+.community-cards{display:flex;gap:5px;justify-content:center;}
+.felt-divider{height:1px;margin:0 14px;background:linear-gradient(90deg,transparent,rgba(212,168,67,0.25),transparent);flex-shrink:0;}
+
+/* PLAYER AREA */
+.player-area{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;flex-shrink:0;gap:8px;}
+.player-info-wrap{display:flex;flex-direction:column;gap:2px;}
+.player-label{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.25em;color:var(--t3);text-transform:uppercase;}
+.player-name{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:0.05em;color:#fff;}
+.player-chips{font-family:'Space Mono',monospace;font-size:10px;color:var(--gold);letter-spacing:0.08em;}
+.player-hand-cards{display:flex;gap:5px;}
+
+/* CARDS */
+.card{width:42px;height:61px;border-radius:6px;background:#fff;border:1.5px solid #ddd;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-weight:700;font-size:12px;line-height:1;position:relative;box-shadow:0 3px 10px rgba(0,0,0,0.5),0 1px 3px rgba(0,0,0,0.3);flex-shrink:0;color:#1a1a1a;overflow:hidden;}
+.card.sm{width:35px;height:50px;font-size:10px;border-radius:5px;}
+.card.red .card-val,.card.red .card-suit{color:#c0392b;}
+.card.back{background:linear-gradient(135deg,#1a2a6e,#0d1a4a);border-color:#2a3a8e;}
+.card.back::before{content:'';position:absolute;inset:3px;border:1px solid rgba(255,255,255,0.1);border-radius:3px;background:repeating-linear-gradient(45deg,rgba(255,255,255,0.03) 0 2px,transparent 2px 8px),repeating-linear-gradient(-45deg,rgba(255,255,255,0.03) 0 2px,transparent 2px 8px);}
+.card.back::after{content:'♠';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:18px;color:rgba(255,255,255,0.12);}
+.card.back.sm::after{font-size:13px;}
+.card-val{position:absolute;top:3px;left:4px;font-size:12px;font-weight:700;line-height:1;}
+.card.sm .card-val{top:2px;left:3px;font-size:10px;}
+.card-suit{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:18px;line-height:1;}
+.card.sm .card-suit{font-size:14px;}
+.card-val-bot{position:absolute;bottom:3px;right:4px;font-size:12px;font-weight:700;line-height:1;transform:rotate(180deg);}
+.card.sm .card-val-bot{bottom:2px;right:3px;font-size:10px;}
+.card-placeholder{width:42px;height:61px;border-radius:6px;border:1.5px dashed rgba(255,255,255,0.1);flex-shrink:0;}
+.card-placeholder.sm{width:35px;height:50px;}
+@keyframes cardDeal{0%{transform:translateY(-18px) rotate(-6deg);opacity:0;}100%{transform:translateY(0) rotate(0);opacity:1;}}
+.card.deal{animation:cardDeal 0.28s ease-out forwards;}
+.card.win-card{box-shadow:0 0 0 2px var(--gold2),0 0 14px rgba(212,168,67,0.6),0 3px 10px rgba(0,0,0,0.5)!important;}
+
+/* ACTION BAR */
+.action-bar{padding:7px 12px 10px;display:flex;flex-direction:column;gap:7px;flex-shrink:0;border-top:1px solid rgba(255,255,255,0.05);}
+.bet-row{display:flex;align-items:center;gap:7px;}
+.bet-label{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.18em;color:var(--t3);text-transform:uppercase;white-space:nowrap;}
+.bet-chips-row{display:flex;gap:5px;flex-wrap:wrap;flex:1;}
+.bet-chip{background:rgba(212,168,67,0.1);border:1px solid rgba(212,168,67,0.3);border-radius:20px;padding:5px 9px;font-family:'Space Mono',monospace;font-size:9px;color:var(--gold2);cursor:pointer;transition:background 0.15s,border-color 0.15s,transform 0.1s;white-space:nowrap;}
+.bet-chip:hover{background:rgba(212,168,67,0.2);border-color:var(--gold2);}
+.bet-chip.active{background:rgba(212,168,67,0.28);border-color:var(--gold2);box-shadow:0 0 8px rgba(212,168,67,0.25);}
+.bet-chip:active{transform:scale(0.9);}
+.current-bet-display{font-family:'Bebas Neue',sans-serif;font-size:17px;color:var(--gold2);min-width:55px;text-align:right;}
+.action-btns{display:flex;gap:6px;}
+.action-btn{flex:1;padding:10px 4px;border:none;border-radius:9px;font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;transition:transform 0.12s,opacity 0.2s;}
+.action-btn:active{transform:scale(0.92);}
+.action-btn:disabled{opacity:0.28;pointer-events:none;}
+.btn-fold{background:rgba(255,255,255,0.07);color:var(--t2);border:1px solid rgba(255,255,255,0.1);}
+.btn-call{background:linear-gradient(135deg,#1e5c8c,#2a78b8);color:#fff;}
+.btn-raise{background:linear-gradient(135deg,var(--red),var(--accent));color:#fff;}
+.btn-check{background:rgba(255,255,255,0.07);color:var(--t1);border:1px solid rgba(255,255,255,0.12);}
+
+/* GAME MESSAGE */
+.game-msg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(7,7,12,0.92);border:1px solid rgba(192,57,43,0.3);border-radius:10px;padding:9px 16px;font-family:'Bebas Neue',sans-serif;font-size:18px;color:#fff;text-align:center;opacity:0;pointer-events:none;transition:opacity 0.3s;white-space:nowrap;z-index:5;}
+.game-msg.show{opacity:1;}
+
+/* FACE RESULT SCREEN */
+#result-overlay{position:fixed;inset:0;z-index:200;opacity:0;pointer-events:none;transition:opacity 0.5s;display:flex;align-items:stretch;}
+#result-overlay.show{opacity:1;pointer-events:auto;}
+.result-face-bg{position:relative;width:100%;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;}
+.result-face-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center top;filter:brightness(0.55) contrast(1.1);}
+.result-face-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,7,12,0.1) 0%,rgba(7,7,12,0.0) 35%,rgba(7,7,12,0.75) 70%,rgba(7,7,12,0.97) 100%);}
+.result-face-content{position:relative;z-index:2;width:100%;padding:24px 20px 32px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;}
+.result-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(32px,9vw,50px);letter-spacing:0.06em;color:#fff;line-height:1.05;text-shadow:0 2px 20px rgba(0,0,0,0.8);}
+.result-title.win{color:var(--gold2);text-shadow:0 0 30px rgba(212,168,67,0.6),0 2px 20px rgba(0,0,0,0.9);}
+.result-title.lose{color:var(--accent);text-shadow:0 0 30px rgba(192,57,43,0.7),0 2px 20px rgba(0,0,0,0.9);}
+.result-sub{font-size:13px;color:rgba(255,255,255,0.75);line-height:1.5;max-width:280px;text-shadow:0 1px 8px rgba(0,0,0,0.9);}
+.result-sub b{color:#fff;}
+.result-btns{display:flex;flex-direction:column;gap:8px;width:100%;max-width:280px;margin-top:4px;}
+.res-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--red),var(--accent));border:none;border-radius:11px;padding:12px 28px;color:#fff;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;cursor:pointer;transition:transform 0.12s;width:100%;}
+.res-btn:active{transform:scale(0.93);}
+.res-btn.ghost{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);color:rgba(255,255,255,0.6);}
+
+/* THINKING DOTS */
+.thinking{display:inline-flex;gap:4px;align-items:center;}
+.thinking span{width:5px;height:5px;border-radius:50%;background:var(--t3);animation:tdot 1.2s ease-in-out infinite;}
+.thinking span:nth-child(2){animation-delay:0.2s;}
+.thinking span:nth-child(3){animation-delay:0.4s;}
+@keyframes tdot{0%,80%,100%{transform:scale(0.5);opacity:0.4;}40%{transform:scale(1);opacity:1;}}
 </style>
 </head>
 <body>
 
+<script>
+// ===== АНТИЧИТ =====
+(function(){
+  'use strict';
+
+  // 1. ДЕВТУЛС ДЕТЕКТ — несколько методов одновременно
+  let devOpen = false;
+  let freezeGame = false;
+
+  function killGame(){
+    if(freezeGame) return;
+    freezeGame = true;
+    document.body.innerHTML = `
+      <div style="position:fixed;inset:0;background:#07070c;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-family:'Courier New',monospace;text-align:center;padding:30px;">
+        <div style="font-size:48px;">🚫</div>
+        <div style="color:#e04444;font-size:22px;font-weight:700;letter-spacing:0.1em;">ЧИТЕР ОБНАРУЖЕН</div>
+        <div style="color:#484858;font-size:12px;line-height:1.7;max-width:260px;">Закрой DevTools и перезапусти игру через Telegram</div>
+      </div>`;
+  }
+
+  // Метод 1: размер окна
+  function checkWindowSize(){
+    const threshold = 160;
+    if(
+      window.outerWidth - window.innerWidth > threshold ||
+      window.outerHeight - window.innerHeight > threshold
+    ){
+      if(!devOpen){ devOpen=true; killGame(); }
+    }
+  }
+
+  // Метод 2: debugger timing trick
+  function checkDebugger(){
+    const start = performance.now();
+    (function(){ debugger; })();
+    const end = performance.now();
+    if(end - start > 100){
+      if(!devOpen){ devOpen=true; killGame(); }
+    }
+  }
+
+  // Метод 3: console.log object trick
+  let consoleOpened = false;
+  const devObj = Object.defineProperty({}, 'id', {
+    get: function(){
+      consoleOpened = true;
+      killGame();
+    }
+  });
+
+  // Метод 4: firebug
+  function checkFirebug(){
+    if(window.console && (window.console.firebug || (window.console.exception && window.console.table))){
+      killGame();
+    }
+  }
+
+  // Запускаем проверки
+  setInterval(checkWindowSize, 800);
+  setInterval(checkDebugger, 3000);
+  setInterval(function(){ console.log('%c', devObj); }, 1500);
+  setInterval(checkFirebug, 2000);
+
+  // 2. БЛОКИРОВКА ПРАВОЙ КНОПКИ
+  document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+
+  // 3. БЛОКИРОВКА ГОРЯЧИХ КЛАВИШ ДЕВТУЛС
+  document.addEventListener('keydown', function(e){
+    // F12
+    if(e.keyCode === 123){ e.preventDefault(); killGame(); }
+    // Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+Shift+C
+    if(e.ctrlKey && e.shiftKey && (e.keyCode===73||e.keyCode===74||e.keyCode===67)){
+      e.preventDefault(); killGame();
+    }
+    // Ctrl+U (view source)
+    if(e.ctrlKey && e.keyCode===85){ e.preventDefault(); killGame(); }
+    // Ctrl+S (save)
+    if(e.ctrlKey && e.keyCode===83){ e.preventDefault(); }
+  });
+
+  // 4. АНТИТАМПЕР — проверяем целостность ключевых функций
+  const _origBestHand = 'bestHand';
+  const _origEval = 'evalFive';
+  setTimeout(function(){
+    if(typeof bestHand !== 'function' || typeof evalFive !== 'function'){
+      killGame();
+    }
+    // Проверяем что функции не подменены пустышками
+    if(bestHand.toString().length < 50 || evalFive.toString().length < 50){
+      killGame();
+    }
+  }, 3000);
+
+  // 5. ПРОВЕРКА TELEGRAM WEBAPP (если открыто не через TG — предупреждение)
+  setTimeout(function(){
+    if(typeof window.Telegram === 'undefined' || !window.Telegram.WebApp){
+      // Не ТГ — показываем предупреждение но не блокируем (для тестов)
+      console.warn('[VIPERR] Not running inside Telegram WebApp');
+    } else {
+      window.Telegram.WebApp.ready();
+      window.Telegram.WebApp.expand();
+      // Запрещаем закрытие свайпом во время игры
+      window.Telegram.WebApp.enableClosingConfirmation();
+    }
+  }, 500);
+
+  // 6. ЗАЩИТА ГЛОБАЛЬНЫХ ПЕРЕМЕННЫХ — детект изменения фишек через консоль
+  let _lastPlayerChips = null;
+  let _lastOppChips = null;
+  let _chipCheckCount = 0;
+
+  setInterval(function(){
+    if(typeof playerChips === 'undefined') return;
+    if(_lastPlayerChips === null){ _lastPlayerChips = playerChips; _lastOppChips = oppChips; return; }
+
+    const pDiff = playerChips - _lastPlayerChips;
+    const oDiff = oppChips - _lastOppChips;
+    const totalOld = _lastPlayerChips + _lastOppChips + pot;
+    const totalNew = playerChips + oppChips + pot;
+
+    // Общая сумма фишек должна всегда быть ~$2.00
+    if(Math.abs(totalNew - 2.00) > 0.15){
+      _chipCheckCount++;
+      if(_chipCheckCount >= 2) killGame();
+    } else {
+      _chipCheckCount = 0;
+    }
+
+    _lastPlayerChips = playerChips;
+    _lastOppChips = oppChips;
+  }, 1200);
+
+})();
+</script>
+
+<!-- LOADING SCREEN -->
 <div id="load-screen">
-  <div class="load-title">Viperr <span>Game</span></div>
-  <div class="load-msg"><b>Сука делай jump</b> — тапай экран чтобы прыгать от стены к стене!</div>
+  <div>
+    <div class="load-title">VIPERR <span>GAME</span></div>
+    <div class="load-sub">казик вайперрят</div>
+  </div>
+  <div class="load-msg">Тасуем колоду...<br>Готовь фишки 🃏</div>
   <div class="load-bar-wrap"><div class="load-bar-fill"></div></div>
 </div>
 
-<div id="menu" class="hidden">
-  <div class="menu-title">Viperr <span>Jump</span></div>
-  <div class="menu-sub">Wall Kickers</div>
-  <img class="menu-char" src="skin3_lambo.png" alt="">
-  <button class="mbtn mbtn-play" onclick="startGame()">▶ &nbsp;Играть</button>
-  <a class="mbtn mbtn-back" href="index.html">← На главную</a>
-</div>
-
-<div id="hud">
-  <div class="hud-block">
-    <div class="hud-lbl">Счёт</div>
-    <div class="hud-val" id="hScore">0</div>
-  </div>
-  <div class="hud-block hud-right">
-    <div class="hud-lbl">Рекорд</div>
-    <div class="hud-val" id="hBest">0</div>
-  </div>
-</div>
-
-<canvas id="c"></canvas>
-
-<div id="death">
-  <div class="dcard">
-    <div class="dcard-eye">Game Over</div>
-    <div class="dcard-title">Упал 💀</div>
-    <div class="dcard-scores">
-      <div class="dscore"><div class="dscore-val hi" id="dScore">0</div><div class="dscore-lbl">Счёт</div></div>
-      <div class="dscore"><div class="dscore-val" id="dBest">0</div><div class="dscore-lbl">Рекорд</div></div>
+<!-- START SCREEN -->
+<div id="start-screen" class="hidden">
+  <div class="start-eyebrow">Viperr Game</div>
+  <div class="start-title">КАЗИК <span>ВАЙПЕРРЯТ</span></div>
+  <div class="start-subtitle">♠ Poker Night ♠</div>
+  <div class="char-select-row">
+    <div class="char-card" id="card-kai" onclick="selectChar('kai')">
+      <img class="char-card-img" id="img-kai" src="" alt="Каенжел">
+      <div class="char-card-name">Каенжел</div>
+      <div class="char-card-tag">ваш противник</div>
+      <div class="select-dot"></div>
     </div>
-    <div class="dbtns">
-      <button class="dbtn dbtn-play" onclick="restartGame()">▶ &nbsp;Начать снова</button>
-      <a class="dbtn dbtn-home" href="index.html">← На главную</a>
+    <div class="char-card" id="card-nain" onclick="selectChar('nain')">
+      <img class="char-card-img" id="img-nain" src="" alt="Найнмазик">
+      <div class="char-card-name">Найнмазик</div>
+      <div class="char-card-tag">ваш противник</div>
+      <div class="select-dot"></div>
     </div>
   </div>
+  <button class="start-btn" id="start-btn" onclick="startGame()" disabled>♠ Начать ♠</button>
 </div>
-<div id="newbest">🔥 НОВЫЙ РЕКОРД!</div>
+
+<!-- GAME SCREEN -->
+<div id="game-screen" class="hidden">
+  <div class="poker-topbar">
+    <div>
+      <div class="poker-logo">VIPERR</div>
+      <div class="poker-logo-sub">Казик Вайперрят</div>
+    </div>
+    <div class="pot-display">
+      <div class="pot-label">Банк</div>
+      <div class="pot-val" id="pot-display">$0.00</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.2em;color:var(--t3);text-transform:uppercase;">Раунд</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--t2);" id="round-display">1</div>
+    </div>
+  </div>
+  <div class="opponent-area">
+    <img class="opp-char" id="opp-char-img" src="" alt="">
+    <div class="opp-info">
+      <div class="opp-name" id="opp-name">—</div>
+      <div class="opp-chips" id="opp-chips">$1.00</div>
+      <div class="opp-status" id="opp-status"></div>
+      <div class="opp-cards" id="opp-cards"></div>
+    </div>
+  </div>
+  <div class="felt-divider"></div>
+  <div class="community-area">
+    <div class="community-label" id="phase-label">Pre-Flop</div>
+    <div class="community-cards" id="community-cards">
+      <div class="card-placeholder sm"></div><div class="card-placeholder sm"></div>
+      <div class="card-placeholder sm"></div><div class="card-placeholder sm"></div>
+      <div class="card-placeholder sm"></div>
+    </div>
+    <div class="game-msg" id="game-msg"></div>
+  </div>
+  <div class="felt-divider"></div>
+  <div class="player-area">
+    <div class="player-info-wrap">
+      <div class="player-label">Вы</div>
+      <div class="player-name">Игрок</div>
+      <div class="player-chips" id="player-chips">$1.00</div>
+    </div>
+    <div class="player-hand-cards" id="player-cards"></div>
+  </div>
+  <div class="action-bar">
+    <div class="bet-row">
+      <div class="bet-label">Ставка:</div>
+      <div class="bet-chips-row">
+        <div class="bet-chip" onclick="setBet(0.05,this)">5¢</div>
+        <div class="bet-chip" onclick="setBet(0.10,this)">10¢</div>
+        <div class="bet-chip" onclick="setBet(0.25,this)">25¢</div>
+        <div class="bet-chip" onclick="setBet(0.50,this)">50¢</div>
+        <div class="bet-chip" onclick="setBetAll(this)">ALL IN</div>
+      </div>
+      <div class="current-bet-display" id="bet-display">$0.05</div>
+    </div>
+    <div class="action-btns">
+      <button class="action-btn btn-fold" id="btn-fold" onclick="playerAction('fold')">Fold</button>
+      <button class="action-btn btn-check" id="btn-check" onclick="playerAction('check')">Check</button>
+      <button class="action-btn btn-call" id="btn-call" onclick="playerAction('call')">Call</button>
+      <button class="action-btn btn-raise" id="btn-raise" onclick="playerAction('raise')">Raise</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESULT OVERLAY -->
+<div id="result-overlay">
+  <div class="result-face-bg" id="result-face-bg">
+    <img src="face.jpg" class="result-face-img" alt="">
+    <div class="result-face-overlay"></div>
+    <div class="result-face-content">
+      <div class="result-title" id="result-title">ВЫ ВЫИГРАЛИ!</div>
+      <div class="result-sub" id="result-sub"></div>
+      <div class="result-btns">
+        <button class="res-btn" onclick="playAgain()">♠ Ещё раз</button>
+        <button class="res-btn" onclick="goToStart()">← Сменить противника</button>
+        <button class="res-btn ghost" onclick="location.href='index.html'">Главная</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
-const canvas = document.getElementById('c');
-const ctx    = canvas.getContext('2d');
+// IMAGES - filled by Python
+const KAI_SRC = 'kai.png';
+const NAIN_SRC = 'kai.png';
 
-// ── Background music ────────────────────────────────────────
-const bgMusic = new Audio('song4.mp3');
-bgMusic.loop = true;
-function playMusic(){
-  bgMusic.currentTime = 0;
-  bgMusic.play().catch(()=>{});
+document.getElementById('img-kai').src = KAI_SRC;
+document.getElementById('img-nain').src = NAIN_SRC;
+
+const CHARS = {
+  kai: { name: 'Каенжел', img: KAI_SRC },
+  nain: { name: 'Найнмазик', img: NAIN_SRC }
+};
+
+// DECK
+const SUITS = ['♠','♥','♦','♣'];
+const RANKS = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+const RANK_VAL = {2:2,3:3,4:4,5:5,6:6,7:7,8:8,9:9,10:10,J:11,Q:12,K:13,A:14};
+
+function makeDeck(){
+  const d=[];
+  for(const s of SUITS) for(const r of RANKS) d.push({rank:r,suit:s});
+  return d;
 }
-function stopMusic(){
-  bgMusic.pause();
-}
-
-// ── Character image ─────────────────────────────────────────
-const charImg = new Image();
-charImg.src   = 'skin3_lambo.png';
-const CW = 44, CH = 72; // render size
-
-// ── Screen ─────────────────────────────────────────────────
-let W, H;
-function resize(){ W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
-window.addEventListener('resize', resize); resize();
-
-// ── Constants ──────────────────────────────────────────────
-const WALL_W      = 48;      // side wall width
-const PLAT_DEPTH  = 68;      // how far platform juts inward
-const PLAT_H      = 16;
-const GRAVITY     = 0.6;
-const SLIDE_GRAV  = 0.22;    // gravity while sliding on wall
-const SLIDE_MAX   = 3.8;     // max slide speed
-const JUMP_VX     = 10;
-const JUMP_VY     = -15.5;
-const BASE_SCROLL = 0;       // platforms don't auto-scroll at start
-// Difficulty ramp: every N points scroll speed increases
-const SPEED_PER_SCORE = 0.04; // pixels/frame added per score point
-const MAX_SCROLL_SPEED = 7.0;
-
-// ── State ───────────────────────────────────────────────────
-let best = parseInt(localStorage.getItem('vg3_best') || '0');
-let score, gameRunning, raf, scrollSpeed;
-let player = {}, platforms = [], particles = [], bgStars = [];
-let camY = 0, highestWorldY = 0;
-let frameCount = 0;
-
-// ── Loading screen ──────────────────────────────────────────
-setTimeout(()=>{
-  const ls = document.getElementById('load-screen');
-  ls.classList.add('hide');
-  setTimeout(()=>{ ls.style.display='none'; document.getElementById('menu').classList.remove('hidden'); }, 650);
-}, 3100);
-
-// ── Input ───────────────────────────────────────────────────
-window.addEventListener('pointerdown', e=>{ e.preventDefault(); if(gameRunning && !player.dead) onTap(); },{passive:false});
-window.addEventListener('keydown', e=>{ if((e.code==='Space'||e.code==='ArrowUp')&&gameRunning&&!player.dead){ e.preventDefault(); onTap(); }});
-
-function onTap(){ if(player.onWall) doJump(); }
-
-// ── Jump ────────────────────────────────────────────────────
-function doJump(){
-  const dir = player.side === 'left' ? 1 : -1;
-  player.vx    = dir * JUMP_VX;
-  player.vy    = JUMP_VY;
-  player.onWall = false;
-  player.facing = dir;
-  // flip animation
-  player.spinning    = true;
-  player.flipPhase   = 0;
-  player.flipFlipped = false;
-  // launch squash
-  player.scaleX = 0.55; player.scaleY = 1.4;
-  // particles
-  burst(player.x, player.y, 10, ['#e04444','#ff7b6b','#fff','#ffb347']);
+function shuffle(d){
+  for(let i=d.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [d[i],d[j]]=[d[j],d[i]];
+  }
+  return d;
 }
 
-// ── Init ────────────────────────────────────────────────────
-function initPlayer(){
-  player = {
-    x: WALL_W + CW/2 + 2, y: 0, // world y, set in startGame
-    vx:0, vy:0,
-    onWall:true, side:'left', facing:1, dead:false,
-    // flip
-    spinning:false, flipPhase:0, flipFlipped:false,
-    scaleX:1, scaleY:1,
-    // death tumble
-    deathVx:0, deathVy:0, deathAngle:0, deathSpin:0,
-    trail:[]
-  };
+// GAME STATE
+let selectedChar=null;
+let deck=[],playerHand=[],oppHand=[],community=[];
+let playerChips=1.00,oppChips=1.00,pot=0;
+let currentBet=0.05,oppBet=0,playerBet=0;
+let phase='preflop',roundNum=1;
+let gameActive=false,inputLocked=false;
+
+function fmt(v){return '$'+Math.max(0,v).toFixed(2);}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+function showMsg(txt,dur=1400){
+  const el=document.getElementById('game-msg');
+  el.textContent=txt;el.classList.add('show');
+  if(dur>0)setTimeout(()=>el.classList.remove('show'),dur);
 }
 
-// Place platforms.  World Y: negative = upward.
-// Camera: camY = world y of screen top.
-function buildPlatforms(){
-  platforms = [];
-  // A few easy starter platforms close together
-  const startGaps  = [100, 110, 115, 120, 125];
-  const normalGaps = () => 130 + Math.random() * 80;
+function makeCardEl(card,small=false,faceDown=false){
+  const el=document.createElement('div');
+  el.className='card'+(small?' sm':'')+(faceDown?' back':'');
+  if(!faceDown){
+    const isRed=card.suit==='♥'||card.suit==='♦';
+    if(isRed)el.classList.add('red');
+    el.innerHTML=`<div class="card-val">${card.rank}</div><div class="card-suit">${card.suit}</div><div class="card-val-bot">${card.rank}</div>`;
+    el.classList.add('deal');
+  }
+  return el;
+}
 
-  let wy = -100; // first platform slightly above start
-  let side = 'right';
-  for(let i = 0; i < 300; i++){
-    const gap  = i < startGaps.length ? startGaps[i] : normalGaps();
-    wy -= gap;
-    const px   = side === 'left' ? WALL_W : W - WALL_W - PLAT_DEPTH;
-    const pLen = 54 + Math.random() * 60; // varied lengths
-    // moving: after score ~5 some platforms move up/down
-    const moves = i > 6 && Math.random() < 0.45;
-    platforms.push({
-      x: px, y: wy,
-      w: PLAT_DEPTH, h: PLAT_H,
-      side,
-      // movement
-      moves,
-      moveAmp:  moves ? (18 + Math.random() * 28) : 0,
-      moveSpeed:moves ? (0.012 + Math.random() * 0.022) : 0,
-      movePhase:Math.random() * Math.PI * 2,
-      baseY: wy,
-      // visual variety
-      color: side === 'left' ? '#c0392b' : '#8e44ad',
-    });
-    side = side === 'left' ? 'right' : 'left';
+function renderPlayerCards(){
+  const el=document.getElementById('player-cards');
+  el.innerHTML='';
+  for(const c of playerHand)el.appendChild(makeCardEl(c,false,false));
+}
+function renderOppCards(reveal=false){
+  const el=document.getElementById('opp-cards');
+  el.innerHTML='';
+  for(const c of oppHand)el.appendChild(makeCardEl(c,true,!reveal));
+}
+function renderCommunity(){
+  const el=document.getElementById('community-cards');
+  el.innerHTML='';
+  for(let i=0;i<5;i++){
+    if(i<community.length) el.appendChild(makeCardEl(community[i],true,false));
+    else{const ph=document.createElement('div');ph.className='card-placeholder sm';el.appendChild(ph);}
+  }
+}
+function updateChips(){
+  document.getElementById('player-chips').textContent=fmt(playerChips);
+  document.getElementById('opp-chips').textContent=fmt(oppChips);
+  document.getElementById('pot-display').textContent=fmt(pot);
+}
+function updatePhaseLabel(){
+  const labels={preflop:'Pre-Flop',flop:'Flop',turn:'Turn',river:'River',showdown:'Showdown'};
+  document.getElementById('phase-label').textContent=labels[phase]||phase;
+}
+function setOppStatus(html){document.getElementById('opp-status').innerHTML=html;}
+function thinkingDots(){return '<div class="thinking"><span></span><span></span><span></span></div>';}
+
+function updateActionBtns(){
+  const canCheck=oppBet<=playerBet;
+  document.getElementById('btn-check').style.display=canCheck?'':'none';
+  document.getElementById('btn-call').style.display=(!canCheck)?'':'none';
+  if(!canCheck){
+    const callAmt=Math.min(oppBet-playerBet,playerChips);
+    document.getElementById('btn-call').textContent='Call '+fmt(callAmt);
+  }
+  document.getElementById('btn-fold').disabled=false;
+  document.getElementById('btn-raise').disabled=playerChips<=0;
+}
+
+function lockActions(lock){
+  ['btn-fold','btn-check','btn-call','btn-raise'].forEach(id=>{
+    document.getElementById(id).disabled=lock;
+  });
+}
+
+// CHAR SELECT
+function selectChar(id){
+  selectedChar=id;
+  document.querySelectorAll('.char-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('card-'+id).classList.add('selected');
+  document.getElementById('start-btn').disabled=false;
+}
+
+// HAND EVAL
+function rankVal(r){return RANK_VAL[r]||parseInt(r);}
+function combos5(arr){
+  const res=[];
+  function rec(s,cur){
+    if(cur.length===5){res.push([...cur]);return;}
+    for(let i=s;i<arr.length;i++)rec(i+1,[...cur,arr[i]]);
+  }
+  rec(0,[]);return res;
+}
+function evalFive(cards){
+  const vals=cards.map(c=>rankVal(c.rank)).sort((a,b)=>b-a);
+  const suits=cards.map(c=>c.suit);
+  const counts={};
+  for(const v of vals)counts[v]=(counts[v]||0)+1;
+  const pairs=Object.entries(counts).filter(([,n])=>n===2).map(([v])=>+v).sort((a,b)=>b-a);
+  const trips=Object.entries(counts).filter(([,n])=>n===3).map(([v])=>+v);
+  const quads=Object.entries(counts).filter(([,n])=>n===4).map(([v])=>+v);
+  const isFlush=suits.every(s=>s===suits[0]);
+  const uniq=[...new Set(vals)].sort((a,b)=>b-a);
+  let isStraight=false,sHigh=0;
+  for(let i=0;i<=uniq.length-5;i++){
+    if(uniq[i]-uniq[i+4]===4){isStraight=true;sHigh=uniq[i];break;}
+  }
+  if(!isStraight&&uniq.includes(14)&&[2,3,4,5].every(x=>uniq.includes(x))){isStraight=true;sHigh=5;}
+  if(isFlush&&isStraight)return{rank:8,name:'Стрит-флеш',high:[sHigh]};
+  if(quads.length)return{rank:7,name:'Каре',high:[quads[0],...vals.filter(v=>v!==quads[0])]};
+  if(trips.length&&pairs.length)return{rank:6,name:'Фулл хаус',high:[trips[0],pairs[0]]};
+  if(isFlush)return{rank:5,name:'Флеш',high:vals};
+  if(isStraight)return{rank:4,name:'Стрит',high:[sHigh]};
+  if(trips.length)return{rank:3,name:'Тройка',high:[trips[0],...vals.filter(v=>v!==trips[0])]};
+  if(pairs.length===2)return{rank:2,name:'Две пары',high:[pairs[0],pairs[1],...vals.filter(v=>v!==pairs[0]&&v!==pairs[1])]};
+  if(pairs.length===1)return{rank:1,name:'Пара',high:[pairs[0],...vals.filter(v=>v!==pairs[0])]};
+  return{rank:0,name:'Старшая карта',high:vals};
+}
+function bestHand(hole,board){
+  const all=[...hole,...board];
+  if(all.length<5)return evalFive(all);
+  let best=null;
+  for(const c of combos5(all)){
+    const s=evalFive(c);
+    if(!best||s.rank>best.rank||(s.rank===best.rank&&cmpH(s.high,best.high)>0))best=s;
+  }
+  return best;
+}
+function cmpH(a,b){
+  for(let i=0;i<Math.max(a.length,b.length);i++){const d=(a[i]||0)-(b[i]||0);if(d)return d;}
+  return 0;
+}
+
+// OPP AI — умный противник
+function evalOppHandStrength(){
+  // 0.0 – 1.0: оценка силы руки с учётом стадии
+  if(community.length===0){
+    // preflop: оцениваем дыру
+    const r1=rankVal(oppHand[0].rank), r2=rankVal(oppHand[1].rank);
+    const suited=oppHand[0].suit===oppHand[1].suit;
+    const pair=r1===r2;
+    const hi=Math.max(r1,r2), lo=Math.min(r1,r2);
+    const gap=hi-lo;
+    let score=0;
+    if(pair) score=0.45+hi*0.025;           // карманная пара
+    else if(hi>=13) score=0.5+lo*0.015;     // туз
+    else score=0.2+(hi+lo)*0.01-(gap*0.03);
+    if(suited) score+=0.06;
+    return Math.min(Math.max(score,0.05),0.95);
+  }
+  const h=bestHand(oppHand,community);
+  // rank 0-8 → 0.0-1.0, но нелинейно
+  const map=[0.08,0.22,0.42,0.58,0.72,0.82,0.90,0.96,1.0];
+  return map[h.rank]||0.1;
+}
+
+function oppPotOdds(){
+  // шанс колла: насколько выгодно по размеру банка
+  const toCall=Math.max(0,playerBet-oppBet);
+  if(toCall<=0) return 1;
+  return pot/(pot+toCall);
+}
+
+async function oppThink(){
+  setOppStatus(thinkingDots());
+  // думает дольше при сложных решениях
+  await sleep(600+Math.random()*1000);
+
+  const str=evalOppHandStrength();
+  const potOdds=oppPotOdds();
+  const toCall=parseFloat(Math.max(0,playerBet-oppBet).toFixed(2));
+  const isBluffChance=Math.random()<0.15; // 15% шанс блефа
+  const effectiveStr=isBluffChance?Math.min(str+0.35,1):str;
+  const r=Math.random();
+
+  // СИЛЬНАЯ РУКА (str > 0.65)
+  if(effectiveStr>0.65){
+    if(r<0.55&&oppChips>=currentBet){
+      // рейз
+      const mult=str>0.85?2.5:1.8;
+      const amt=parseFloat(Math.min(currentBet*mult,oppChips).toFixed(2));
+      setOppStatus('Raise '+fmt(amt));await sleep(300);
+      return{action:'raise',amount:Math.max(amt,0.05)};
+    }else{
+      // колл или чек
+      if(toCall>0&&toCall<=oppChips){
+        setOppStatus('Call '+fmt(toCall));await sleep(250);
+        return{action:'call',amount:toCall};
+      }
+      setOppStatus('Check');await sleep(200);return 'check';
+    }
+  }
+
+  // СРЕДНЯЯ РУКА (0.35 – 0.65)
+  if(effectiveStr>0.35){
+    if(toCall>0){
+      // колл если пот-оддсы выгодные
+      if(potOdds>0.3&&toCall<=oppChips){
+        setOppStatus('Call '+fmt(toCall));await sleep(250);
+        return{action:'call',amount:toCall};
+      }else{
+        // фолд если слишком дорого
+        setOppStatus('Fold');await sleep(350);return 'fold';
+      }
+    }else{
+      // без ставки — иногда рейзим, иногда чек
+      if(r<0.25&&oppChips>=currentBet){
+        const amt=parseFloat(Math.min(currentBet,oppChips).toFixed(2));
+        setOppStatus('Raise '+fmt(amt));await sleep(300);
+        return{action:'raise',amount:amt};
+      }
+      setOppStatus('Check');await sleep(200);return 'check';
+    }
+  }
+
+  // СЛАБАЯ РУКА (< 0.35)
+  if(toCall>0){
+    // блеф-рейз иногда при слабой руке
+    if(isBluffChance&&r<0.3&&oppChips>=currentBet*1.5){
+      const amt=parseFloat(Math.min(currentBet*1.5,oppChips).toFixed(2));
+      setOppStatus('Raise '+fmt(amt));await sleep(400);
+      return{action:'raise',amount:amt};
+    }
+    // фолд если ставка большая, иначе иногда колл
+    if(toCall/pot>0.45){
+      setOppStatus('Fold');await sleep(350);return 'fold';
+    }else if(r<0.35&&toCall<=oppChips){
+      setOppStatus('Call '+fmt(toCall));await sleep(250);
+      return{action:'call',amount:toCall};
+    }else{
+      setOppStatus('Fold');await sleep(350);return 'fold';
+    }
+  }else{
+    // без ставки — чек или редкий блеф
+    if(r<0.18&&oppChips>=currentBet){
+      const amt=parseFloat(Math.min(currentBet,oppChips).toFixed(2));
+      setOppStatus('Raise '+fmt(amt));await sleep(400);
+      return{action:'raise',amount:amt};
+    }
+    setOppStatus('Check');await sleep(200);return 'check';
   }
 }
 
-function genStars(){
-  bgStars = [];
-  for(let i=0;i<80;i++) bgStars.push({ x:Math.random()*2000-1000, wy:Math.random()*-8000, r:0.5+Math.random()*1.5, a:0.2+Math.random()*0.5 });
-}
-
+// GAME FLOW
 function startGame(){
-  document.getElementById('menu').classList.add('hidden');
-  document.getElementById('hud').classList.add('on');
-  playMusic();
-  score = 0; scrollSpeed = 0; frameCount = 0;
-  particles = [];
-  resize();
-  genStars();
-  initPlayer();
-  buildPlatforms();
-  // put player on left wall, camera so player is at 60% height
-  player.y  = H * 0.0; // world y = 0 is "ground"
-  camY      = player.y - H * 0.6;
-  highestWorldY = player.y;
-  document.getElementById('hScore').textContent = '0';
-  document.getElementById('hBest').textContent  = best;
-  gameRunning = true;
-  if(raf) cancelAnimationFrame(raf);
-  lastT = 0;
-  raf = requestAnimationFrame(loop);
+  document.getElementById('start-screen').classList.add('hidden');
+  document.getElementById('game-screen').classList.remove('hidden');
+  const ch=CHARS[selectedChar];
+  document.getElementById('opp-char-img').src=ch.img;
+  document.getElementById('opp-name').textContent=ch.name;
+  playerChips=1.00;oppChips=1.00;roundNum=1;
+  newRound();
 }
 
-function restartGame(){
-  document.getElementById('death').classList.remove('on');
-  document.getElementById('newbest').classList.remove('on');
-  setTimeout(startGame, 180);
+async function newRound(){
+  gameActive=true;inputLocked=true;
+  pot=0;oppBet=0;playerBet=0;community=[];
+  phase='preflop';
+  document.getElementById('round-display').textContent=roundNum;
+  document.getElementById('result-overlay').classList.remove('show');
+  deck=shuffle(makeDeck());
+  playerHand=[deck.pop(),deck.pop()];
+  oppHand=[deck.pop(),deck.pop()];
+  renderPlayerCards();renderOppCards(false);renderCommunity();updatePhaseLabel();
+  setOppStatus('');
+  // Blinds: player=SB, opp=BB
+  const sb=0.05,bb=0.10;
+  playerChips=parseFloat((playerChips-sb).toFixed(2));
+  oppChips=parseFloat((oppChips-bb).toFixed(2));
+  pot=parseFloat((sb+bb).toFixed(2));
+  playerBet=sb;oppBet=bb;currentBet=bb;
+  updateChips();
+  showMsg('SB: 5¢ / BB: 10¢',1200);
+  await sleep(1500);
+  inputLocked=false;
+  lockActions(false);
+  updateActionBtns();
 }
 
-// ── Score ───────────────────────────────────────────────────
-function updateScore(){
-  if(player.y < highestWorldY){
-    highestWorldY = player.y;
-    const risen = -highestWorldY;
-    score = Math.floor(risen / 80);
-    if(score > best){ best = score; localStorage.setItem('vg3_best', best); }
-    document.getElementById('hScore').textContent = score;
-    document.getElementById('hBest').textContent  = best;
-  }
-}
+async function playerAction(action){
+  if(inputLocked||!gameActive)return;
+  inputLocked=true;lockActions(true);
 
-// ── Particles ────────────────────────────────────────────────
-function burst(x, y, n, cols){
-  for(let i=0;i<n;i++){
-    const a=Math.random()*Math.PI*2, s=1.5+Math.random()*4.5;
-    particles.push({ x, y, vx:Math.cos(a)*s, vy:Math.sin(a)*s-1.5,
-      life:1, maxLife:1, col:cols[Math.floor(Math.random()*cols.length)], r:2.5+Math.random()*3 });
-  }
-}
-
-// ── Collision ─────────────────────────────────────────────────
-function collide(){
-  if(player.dead) return;
-  const pl = player.x - CW/2, pr = player.x + CW/2;
-  const pt = player.y - CH/2, pb = player.y + CH/2;
-
-  // Left wall
-  if(pl <= WALL_W){
-    player.x = WALL_W + CW/2;
-    player.vx = 0;
-    landWall('left');
+  if(action==='fold'){
+    oppChips=parseFloat((oppChips+pot).toFixed(2));pot=0;updateChips();
+    showMsg('Вы сбросили карты',1000);
+    await sleep(1300);
+    inputLocked=false;
+    await checkGameOver('opp_won_fold');
     return;
   }
-  // Right wall
-  if(pr >= W - WALL_W){
-    player.x = W - WALL_W - CW/2;
-    player.vx = 0;
-    landWall('right');
+  if(action==='check'){
+    if(oppBet>playerBet){inputLocked=false;lockActions(false);return;}
+  }
+  if(action==='call'){
+    const amt=parseFloat(Math.min(oppBet-playerBet,playerChips).toFixed(2));
+    playerChips=parseFloat((playerChips-amt).toFixed(2));
+    pot=parseFloat((pot+amt).toFixed(2));
+    playerBet=parseFloat((playerBet+amt).toFixed(2));
+    updateChips();showMsg('Call '+fmt(amt),800);await sleep(900);
+  }
+  if(action==='raise'){
+    const amt=parseFloat(Math.min(currentBet,playerChips).toFixed(2));
+    playerChips=parseFloat((playerChips-amt).toFixed(2));
+    pot=parseFloat((pot+amt).toFixed(2));
+    playerBet=parseFloat((playerBet+amt).toFixed(2));
+    updateChips();showMsg('Raise '+fmt(amt),800);await sleep(900);
+  }
+
+  // Opp responds
+  const resp=await oppThink();
+  if(resp==='fold'){
+    playerChips=parseFloat((playerChips+pot).toFixed(2));pot=0;updateChips();
+    await sleep(400);inputLocked=false;
+    await endHand('player','(противник сбросил)','');
     return;
   }
-
-  // Platforms
-  for(const p of platforms){
-    if(p.side === 'left'){
-      const face = p.x + p.w;
-      if(pl < face + 4 && pl > face - CW*0.55 && player.vx <= 0){
-        if(pb > p.y && pt < p.y + p.h){
-          player.x = face + CW/2;
-          player.vx = 0;
-          landWall('left');
-          return;
-        }
-      }
+  if(resp==='check'){/* oppBet stays */}
+  if(typeof resp==='object'){
+    if(resp.action==='call'){
+      oppChips=parseFloat((oppChips-resp.amount).toFixed(2));
+      pot=parseFloat((pot+resp.amount).toFixed(2));
+      oppBet=parseFloat((oppBet+resp.amount).toFixed(2));
     }
-    if(p.side === 'right'){
-      const face = p.x;
-      if(pr > face - 4 && pr < face + CW*0.55 && player.vx >= 0){
-        if(pb > p.y && pt < p.y + p.h){
-          player.x = face - CW/2;
-          player.vx = 0;
-          landWall('right');
-          return;
-        }
-      }
+    if(resp.action==='raise'){
+      oppChips=parseFloat((oppChips-resp.amount).toFixed(2));
+      pot=parseFloat((pot+resp.amount).toFixed(2));
+      oppBet=parseFloat((oppBet+resp.amount).toFixed(2));
+      currentBet=resp.amount;
     }
+    updateChips();
   }
-
-  player.onWall = false;
+  await sleep(400);
+  await advancePhase();
 }
 
-function landWall(side){
-  if(player.onWall && player.side === side) return; // already on this wall
-  player.onWall     = true;
-  player.side       = side;
-  player.spinning   = false;
-  player.flipPhase  = 0;
-  player.flipFlipped = false;
-  // Wall-hit squash
-  player.scaleX = 0.45; player.scaleY = 1.45;
-  burst(player.x, player.y, 6, ['#e04444','#ff9966','#fff']);
+async function advancePhase(){
+  if(phase==='preflop'){phase='flop';community.push(deck.pop(),deck.pop(),deck.pop());}
+  else if(phase==='flop'){phase='turn';community.push(deck.pop());}
+  else if(phase==='turn'){phase='river';community.push(deck.pop());}
+  else{phase='showdown';await doShowdown();return;}
+  oppBet=0;playerBet=0;currentBet=0.05;
+  updatePhaseLabel();renderCommunity();
+  showMsg(phase==='flop'?'Флоп':phase==='turn'?'Тёрн':'Ривер',700);
+  await sleep(900);
+  inputLocked=false;lockActions(false);updateActionBtns();
 }
 
-// ── Death ─────────────────────────────────────────────────────
-function die(){
-  if(player.dead) return;
-  player.dead = true; gameRunning = false;
-  stopMusic();
-  // tumble physics
-  player.deathVx    = player.vx * 0.5;
-  player.deathVy    = Math.min(player.vy, -3);
-  player.deathAngle = 0;
-  player.deathSpin  = (Math.random() > 0.5 ? 1 : -1) * (0.12 + Math.random() * 0.18);
-  burst(player.x, player.y, 22, ['#e04444','#ff7b6b','#ffb347','#fff','#c0392b']);
-
-  const newRec = score > 0 && score >= best;
-  document.getElementById('dScore').textContent = score;
-  document.getElementById('dBest').textContent  = best;
-  if(newRec){ document.getElementById('newbest').classList.add('on'); setTimeout(()=>document.getElementById('newbest').classList.remove('on'),2500); }
-  setTimeout(()=>document.getElementById('death').classList.add('on'), 900);
+async function doShowdown(){
+  phase='showdown';updatePhaseLabel();
+  renderOppCards(true);await sleep(700);
+  const pS=bestHand(playerHand,community);
+  const oS=bestHand(oppHand,community);
+  const diff=pS.rank-oS.rank||cmpH(pS.high,oS.high);
+  let winner=diff>0?'player':diff<0?'opp':'tie';
+  const oppName=CHARS[selectedChar].name;
+  showMsg(winner==='player'?'Вы: '+pS.name:winner==='opp'?oppName+': '+oS.name:'Ничья!',1600);
+  await sleep(1800);
+  if(winner==='player')playerChips=parseFloat((playerChips+pot).toFixed(2));
+  else if(winner==='opp')oppChips=parseFloat((oppChips+pot).toFixed(2));
+  else{playerChips=parseFloat((playerChips+pot/2).toFixed(2));oppChips=parseFloat((oppChips+pot/2).toFixed(2));}
+  pot=0;updateChips();
+  await endHand(winner,pS.name,oS.name);
 }
 
-// ── Extend platforms ──────────────────────────────────────────
-function maybeExtend(){
-  const topNeeded = camY - H * 0.5;
-  let last = platforms[platforms.length-1];
-  while(!last || last.y > topNeeded){
-    const prev = platforms[platforms.length-1];
-    const gap  = 130 + Math.random() * 90 + Math.min(score * 0.5, 40);
-    const wy   = (prev ? prev.y : 0) - gap;
-    const side = prev ? (prev.side === 'left' ? 'right' : 'left') : 'right';
-    const px   = side === 'left' ? WALL_W : W - WALL_W - PLAT_DEPTH;
-    const moves = score > 5 && Math.random() < Math.min(0.15 + score*0.01, 0.6);
-    platforms.push({
-      x:px, y:wy, w:PLAT_DEPTH, h:PLAT_H, side,
-      moves, moveAmp:moves?(18+Math.random()*28):0,
-      moveSpeed:moves?(0.012+Math.random()*0.025):0,
-      movePhase:Math.random()*Math.PI*2, baseY:wy,
-      color: side==='left'?'#c0392b':'#8e44ad'
-    });
-    last = platforms[platforms.length-1];
+async function endHand(winner,pHandName,oHandName){
+  inputLocked=false;gameActive=false;
+  await sleep(300);
+  if(oppChips<0.05&&winner==='player'||(winner==='player'&&oppChips<=0)){
+    await endGame('player',pHandName);return;
   }
-  // Cull below
-  const cutoff = camY + H + 600;
-  platforms = platforms.filter(p => p.y < cutoff);
-}
-
-// ── Draw ──────────────────────────────────────────────────────
-function drawBG(){
-  // Deep space gradient
-  const g = ctx.createLinearGradient(0,0,0,H);
-  g.addColorStop(0,'#03030a'); g.addColorStop(1,'#07070e');
-  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-
-  // Stars
-  bgStars.forEach(s=>{
-    const sy = s.wy - camY;
-    if(sy<-10||sy>H+10) return;
-    ctx.beginPath(); ctx.arc(s.x % W, sy, s.r, 0, Math.PI*2);
-    ctx.fillStyle=`rgba(255,255,255,${s.a})`; ctx.fill();
-  });
-
-  // Subtle grid in play area
-  ctx.strokeStyle='rgba(255,255,255,0.018)'; ctx.lineWidth=1;
-  const sp=88, off=((-camY)%sp+sp)%sp;
-  for(let y=off;y<H+sp;y+=sp){ ctx.beginPath();ctx.moveTo(WALL_W,y);ctx.lineTo(W-WALL_W,y);ctx.stroke(); }
-}
-
-function drawWalls(){
-  // ── LEFT WALL ──
-  // Base
-  const lg=ctx.createLinearGradient(0,0,WALL_W,0);
-  lg.addColorStop(0,'#1c0a0a'); lg.addColorStop(1,'#0e0506');
-  ctx.fillStyle=lg; ctx.fillRect(0,0,WALL_W,H);
-  // Brick rows
-  const bH=28, bOff=((-camY)%bH+bH)%bH;
-  ctx.strokeStyle='rgba(255,255,255,0.045)'; ctx.lineWidth=1;
-  for(let y=bOff;y<H+bH;y+=bH){ ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(WALL_W,y);ctx.stroke(); }
-  for(let y=bOff;y<H+bH;y+=bH*2){ ctx.beginPath();ctx.moveTo(WALL_W/2,y);ctx.lineTo(WALL_W/2,y+bH);ctx.stroke(); }
-  // Inner edge glow
-  const lge=ctx.createLinearGradient(WALL_W-2,0,WALL_W+12,0);
-  lge.addColorStop(0,'rgba(192,57,43,0.8)'); lge.addColorStop(1,'rgba(192,57,43,0)');
-  ctx.fillStyle=lge; ctx.fillRect(WALL_W-2,0,14,H);
-  ctx.strokeStyle='rgba(224,68,68,0.9)'; ctx.lineWidth=2;
-  ctx.beginPath();ctx.moveTo(WALL_W,0);ctx.lineTo(WALL_W,H);ctx.stroke();
-
-  // ── RIGHT WALL ──
-  const rg=ctx.createLinearGradient(W,0,W-WALL_W,0);
-  rg.addColorStop(0,'#1c0a0a'); rg.addColorStop(1,'#0e0506');
-  ctx.fillStyle=rg; ctx.fillRect(W-WALL_W,0,WALL_W,H);
-  for(let y=bOff;y<H+bH;y+=bH){ ctx.beginPath();ctx.moveTo(W-WALL_W,y);ctx.lineTo(W,y);ctx.stroke(); }
-  for(let y=bOff;y<H+bH;y+=bH*2){ ctx.beginPath();ctx.moveTo(W-WALL_W/2,y);ctx.lineTo(W-WALL_W/2,y+bH);ctx.stroke(); }
-  const rge=ctx.createLinearGradient(W-WALL_W+2,0,W-WALL_W-12,0);
-  rge.addColorStop(0,'rgba(192,57,43,0.8)'); rge.addColorStop(1,'rgba(192,57,43,0)');
-  ctx.fillStyle=rge; ctx.fillRect(W-WALL_W-12,0,14,H);
-  ctx.strokeStyle='rgba(224,68,68,0.9)'; ctx.lineWidth=2;
-  ctx.beginPath();ctx.moveTo(W-WALL_W,0);ctx.lineTo(W-WALL_W,H);ctx.stroke();
-}
-
-function drawPlatforms(dt){
-  for(const p of platforms){
-    // update moving platform
-    if(p.moves){
-      p.y = p.baseY + Math.sin(frameCount * p.moveSpeed + p.movePhase) * p.moveAmp;
-    }
-    const sy = p.y - camY;
-    if(sy < -PLAT_H-20 || sy > H+20) continue;
-
-    const isLeft = p.side === 'left';
-    const innerX = isLeft ? p.x + p.w : p.x;
-
-    // Shadow under platform
-    ctx.fillStyle='rgba(0,0,0,0.35)';
-    ctx.fillRect(p.x+2, sy+p.h, p.w-4, 6);
-
-    // Body
-    const grad = ctx.createLinearGradient(p.x, sy, p.x+p.w, sy);
-    if(isLeft){
-      grad.addColorStop(0,'#3d1414'); grad.addColorStop(0.6,'#5c1e1e'); grad.addColorStop(1,'#7a2828');
-    } else {
-      grad.addColorStop(0,'#2a1040'); grad.addColorStop(0.4,'#3d1860'); grad.addColorStop(1,'#5a2888');
-    }
-    ctx.fillStyle=grad; ctx.fillRect(p.x, sy, p.w, p.h);
-
-    // Top highlight
-    ctx.fillStyle = isLeft ? 'rgba(224,68,68,0.6)' : 'rgba(180,100,255,0.6)';
-    ctx.fillRect(p.x, sy, p.w, 3);
-
-    // Inner face glow (where player lands)
-    const faceGrad = ctx.createLinearGradient(innerX-(isLeft?0:8), sy, innerX+(isLeft?8:0), sy);
-    faceGrad.addColorStop(0, isLeft?'rgba(224,68,68,1)':'rgba(180,100,255,1)');
-    faceGrad.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.fillStyle=faceGrad;
-    ctx.fillRect(isLeft?innerX-3:innerX, sy, 3, p.h);
-
-    // Glow halo
-    const glowR = ctx.createRadialGradient(innerX,sy+p.h/2,0,innerX,sy+p.h/2,32);
-    glowR.addColorStop(0, isLeft?'rgba(192,57,43,0.4)':'rgba(140,80,200,0.4)');
-    glowR.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.fillStyle=glowR;
-    ctx.beginPath();
-    ctx.ellipse(innerX, sy+p.h/2, 32, 20, 0, 0, Math.PI*2);
-    ctx.fill();
-
-    // Moving indicator: pulsing dot
-    if(p.moves){
-      const pulse = 0.4 + 0.4*Math.sin(frameCount*0.08);
-      ctx.beginPath();
-      ctx.arc(p.x+p.w/2, sy+p.h/2, 3, 0, Math.PI*2);
-      ctx.fillStyle=`rgba(255,220,80,${pulse})`;
-      ctx.fill();
-    }
+  if(playerChips<0.05&&winner==='opp'||(winner==='opp'&&playerChips<=0)){
+    await endGame('opp',oHandName);return;
   }
+  if(winner==='tie'&&playerChips<0.05&&oppChips<0.05){await endGame('tie','');return;}
+  roundNum++;await sleep(700);newRound();
 }
 
-function drawParticles(){
-  for(let i=particles.length-1;i>=0;i--){
-    const p=particles[i];
-    p.x+=p.vx; p.y+=p.vy; p.vy+=0.15; p.vx*=0.97; p.life-=0.035;
-    if(p.life<=0){particles.splice(i,1);continue;}
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.r * p.life, 0, Math.PI*2);
-    ctx.fillStyle=p.col; ctx.globalAlpha=p.life*p.life; ctx.fill();
-    ctx.globalAlpha=1;
-  }
+async function checkGameOver(reason){
+  if(oppChips<0.05){await endGame('player','');return;}
+  if(playerChips<0.05){await endGame('opp','');return;}
+  roundNum++;await sleep(500);newRound();
 }
 
-// wall-slide dust stream
-function maybeDust(){
-  if(!player.onWall || Math.abs(player.vy)<0.4 || Math.random()>0.3) return;
-  const dx = player.side==='left' ? -1 : 1;
-  const sy = player.y - camY;
-  particles.push({
-    x: player.x + dx*CW*0.5,
-    y: sy + CW*0.2 + Math.random()*CW*0.5,
-    vx: dx*(0.3+Math.random()*0.7), vy:-0.2+Math.random()*0.4,
-    life:0.6+Math.random()*0.3, maxLife:1,
-    col: player.side==='left'?'rgba(192,57,43,0.7)':'rgba(140,80,200,0.7)',
-    r:2
-  });
+async function endGame(winner,handName){
+  const overlay=document.getElementById('result-overlay');
+  const title=document.getElementById('result-title');
+  const emoji=document.getElementById('result-emoji');
+  const sub=document.getElementById('result-sub');
+  const oppName=CHARS[selectedChar].name;
+  if(winner==='player'){
+    emoji.textContent='🏆';
+    title.textContent='ВЫ ВЫИГРАЛИ!';title.className='result-title win';
+    sub.innerHTML=`ты обчистил этого шпенделя<br><b>${oppName}</b> до нитки! 😈${handName?'<br><br>Твоя комбинация: <b>'+handName+'</b>':''}`;
+  }else if(winner==='opp'){
+    emoji.textContent='💀';
+    title.textContent='НИХУЯ ТЫ ЛУЗЕР';title.className='result-title lose';
+    sub.innerHTML=`<b>${oppName}</b> унёс все твои фишки.<br>Иди потренируйся, нуб 🃏`;
+  }else{
+    emoji.textContent='🤝';title.textContent='НИЧЬЯ';title.className='result-title';
+    sub.innerHTML='Никто не выиграл. Бывает!';
+  }
+  overlay.classList.add('show');
 }
 
-function drawPlayer(){
-  if(player.dead){
-    // Death tumble: physics-driven fall + spin
-    player.deathVy += 0.55;
-    player.deathVx *= 0.99;
-    player.x  += player.deathVx;
-    player.y  += player.deathVy;
-    player.deathAngle += player.deathSpin;
-    // Shrink as falls
-    const sy = player.y - camY;
-    const fadeY = Math.max(0, 1 - Math.max(0, sy - H*0.5) / (H*0.6));
-    if(fadeY <= 0) return;
-    ctx.save();
-    ctx.globalAlpha = fadeY;
-    ctx.translate(player.x, sy);
-    ctx.rotate(player.deathAngle);
-    ctx.scale(player.facing * fadeY, fadeY);
-    if(charImg.complete && charImg.naturalWidth>0)
-      ctx.drawImage(charImg,-CW/2,-CH/2,CW,CH);
-    else{ ctx.fillStyle='#e04444'; ctx.fillRect(-CW/2,-CH/2,CW,CH); }
-    ctx.restore();
-    return;
-  }
-
-  const cx = player.x;
-  const cy = player.y - camY;
-
-  // ── Recover wall-squash ──
-  player.scaleX += (1-player.scaleX)*0.2;
-  player.scaleY += (1-player.scaleY)*0.2;
-
-  // ── Flip / salto ──
-  // flipPhase 0→1 = one flip.
-  // scaleY: 1 at 0/1, collapses to ~0.08 at 0.5 (tucked), then opens again
-  // facing flips at 0.5 so looks like body went over
-  if(player.spinning){
-    player.flipPhase += 0.065; // snappy ~15 frames per flip
-    if(player.flipPhase >= 1){ player.flipPhase=0; player.flipFlipped=false; }
-    if(!player.flipFlipped && player.flipPhase>=0.5){ player.flipFlipped=true; player.facing*=-1; }
-  }
-
-  let flipSY=1, flipSX=1;
-  if(player.spinning){
-    const tuck = Math.sin(player.flipPhase*Math.PI); // 0→1→0
-    flipSY = 1 - tuck*0.88;  // 1→0.12→1  squish body
-    flipSX = 1 + tuck*0.5;   // widen when tucked
-  }
-
-  // ── Ghost trail ──
-  if(player.spinning){
-    player.trail.push({cx,cy,flipSY,flipSX,facing:player.facing,life:1});
-    if(player.trail.length>5) player.trail.shift();
-    player.trail.forEach((t,i)=>{
-      ctx.save();
-      ctx.globalAlpha=(i/player.trail.length)*0.22*t.life;
-      ctx.translate(t.cx,t.cy);
-      ctx.scale(t.facing*t.flipSX, t.flipSY);
-      if(charImg.complete&&charImg.naturalWidth>0)
-        ctx.drawImage(charImg,-CW/2,-CH/2,CW,CH);
-      ctx.restore();
-      t.life-=0.2;
-    });
-  } else { player.trail=[]; }
-
-  maybeDust();
-
-  // ── Main sprite ──
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.scale(player.facing * player.scaleX * flipSX, player.scaleY * flipSY);
-  if(charImg.complete && charImg.naturalWidth>0)
-    ctx.drawImage(charImg,-CW/2,-CH/2,CW,CH);
-  else{ ctx.fillStyle='#e04444'; ctx.fillRect(-CW/2,-CH/2,CW,CH); }
-  ctx.restore();
-
-  // ── Wall grip glow ──
-  if(player.onWall){
-    const gx = player.side==='left' ? cx-CW/2 : cx+CW/2;
-    const col = player.side==='left'?'rgba(192,57,43,':'rgba(140,80,200,';
-    const gr = ctx.createRadialGradient(gx,cy,1,gx,cy,40);
-    gr.addColorStop(0,col+'0.55)'); gr.addColorStop(1,col+'0)');
-    ctx.fillStyle=gr; ctx.beginPath();
-    ctx.ellipse(gx,cy,40,28,0,0,Math.PI*2); ctx.fill();
-  }
+function playAgain(){
+  document.getElementById('result-overlay').classList.remove('show');
+  playerChips=1.00;oppChips=1.00;roundNum=1;
+  newRound();
+}
+function goToStart(){
+  document.getElementById('result-overlay').classList.remove('show');
+  document.getElementById('game-screen').classList.add('hidden');
+  document.getElementById('start-screen').classList.remove('hidden');
+  selectedChar=null;
+  document.querySelectorAll('.char-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('start-btn').disabled=true;
 }
 
-// Speed indicator bar (top-center, thin)
-function drawSpeedBar(){
-  const pct = Math.min(scrollSpeed/MAX_SCROLL_SPEED,1);
-  if(pct<=0) return;
-  const bw=min(160,W*0.35), bh=3, bx=(W-bw)/2, by=10;
-  ctx.fillStyle='rgba(255,255,255,0.06)';
-  ctx.beginPath(); ctx.roundRect(bx,by,bw,bh,2); ctx.fill();
-  const fg=ctx.createLinearGradient(bx,0,bx+bw*pct,0);
-  fg.addColorStop(0,'#c0392b'); fg.addColorStop(1,'#ff7b6b');
-  ctx.fillStyle=fg;
-  ctx.beginPath(); ctx.roundRect(bx,by,bw*pct,bh,2); ctx.fill();
+// BET CONTROLS
+function setBet(val,el){
+  currentBet=parseFloat(Math.min(val,playerChips).toFixed(2));
+  document.getElementById('bet-display').textContent=fmt(currentBet);
+  document.querySelectorAll('.bet-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
 }
-function min(a,b){return a<b?a:b;}
-
-// ── Main loop ─────────────────────────────────────────────────
-let lastT=0;
-function loop(t=0){
-  const dt = Math.min((t-lastT)/16.67, 3);
-  lastT=t; frameCount++;
-
-  if(gameRunning && !player.dead){
-    // Scroll speed ramps with score
-    scrollSpeed = Math.min(score * SPEED_PER_SCORE, MAX_SCROLL_SPEED);
-
-    // Scroll all platforms down (camera moves up = world scrolls down)
-    const scroll = scrollSpeed * dt;
-    platforms.forEach(p=>{ p.y += scroll; p.baseY += scroll; });
-    // move player down with scroll so it doesn't look like ground drops
-    // (actually in Wall Kickers the world scrolls and player must keep up)
-    // If player is on wall, also scroll them
-    if(player.onWall) player.y += scroll;
-
-    // Physics
-    if(player.onWall){
-      player.vy += GRAVITY * SLIDE_GRAV * dt;
-      player.vy  = Math.min(player.vy, SLIDE_MAX + scrollSpeed*0.3);
-      player.y  += player.vy * dt;
-    } else {
-      player.vy += GRAVITY * dt;
-      player.x  += player.vx * dt;
-      player.y  += player.vy * dt;
-    }
-
-    collide();
-    updateScore();
-
-    // Camera: follows player up only (don't scroll back down)
-    const targetCam = player.y - H*0.5;
-    if(targetCam < camY) camY += (targetCam-camY)*0.13*dt;
-    // But also scroll cam down with platforms
-    camY += scroll;
-
-    // Death: fell below screen
-    const screenY = player.y - camY;
-    if(screenY > H + 150) die();
-  } else if(player.dead){
-    // keep animating death tumble
-    player.deathVy += 0.55;
-    player.y += player.deathVy;
-  }
-
-  maybeExtend();
-
-  // ── Render ──
-  drawBG();
-  drawPlatforms(dt);
-  drawWalls();
-  drawParticles();
-  drawPlayer();
-  drawSpeedBar();
-
-  raf = requestAnimationFrame(loop);
+function setBetAll(el){
+  currentBet=parseFloat(playerChips.toFixed(2));
+  document.getElementById('bet-display').textContent=fmt(currentBet)+' ALL IN';
+  document.querySelectorAll('.bet-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
 }
 
-document.getElementById('hBest').textContent = best;
+// LOADING
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    document.getElementById('load-screen').classList.add('hide');
+    setTimeout(()=>{
+      document.getElementById('load-screen').style.display='none';
+      document.getElementById('start-screen').classList.remove('hidden');
+    },680);
+  },2700);
+});
 </script>
 </body>
 </html>
