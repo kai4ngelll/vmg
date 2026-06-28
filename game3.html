@@ -507,6 +507,20 @@ let currentBet=0.05,oppBet=0,playerBet=0;
 let phase='preflop',roundNum=1;
 let gameActive=false,inputLocked=false;
 
+// МОДЕЛЬ ИГРОКА — память о поведении
+let playerModel={
+  totalRaises:0,       // сколько раз рейзил всего
+  totalFolds:0,        // сколько раз фолдил
+  totalHands:0,        // сколько рук сыграно
+  bluffsCaught:0,      // сколько раз блефовал и проиграл
+  bigBetWins:0,        // побед с большой ставкой (возможный блеф)
+  bigBetLoses:0,       // проигрышей с большой ставкой
+  preflopRaiseRate:0,  // % рейзов на префлопе
+  aggressionSum:0,     // сумма ставок относительно банка
+  aggressionCount:0,
+  roundActions:[]      // действия текущего раунда
+};
+
 function fmt(v){return '$'+Math.max(0,v).toFixed(2);}
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
@@ -653,110 +667,238 @@ function cmpH(a,b){
   return 0;
 }
 
-// OPP AI — умный противник
+// ============================================================
+// OPP AI — человекоподобный противник
+// ============================================================
+
+// --- Оценка своей руки ---
 function evalOppHandStrength(){
-  // 0.0 – 1.0: оценка силы руки с учётом стадии
   if(community.length===0){
-    // preflop: оцениваем дыру
-    const r1=rankVal(oppHand[0].rank), r2=rankVal(oppHand[1].rank);
+    const r1=rankVal(oppHand[0].rank),r2=rankVal(oppHand[1].rank);
     const suited=oppHand[0].suit===oppHand[1].suit;
     const pair=r1===r2;
-    const hi=Math.max(r1,r2), lo=Math.min(r1,r2);
-    const gap=hi-lo;
+    const hi=Math.max(r1,r2),lo=Math.min(r1,r2),gap=hi-lo;
     let score=0;
-    if(pair) score=0.45+hi*0.025;           // карманная пара
-    else if(hi>=13) score=0.5+lo*0.015;     // туз
-    else score=0.2+(hi+lo)*0.01-(gap*0.03);
-    if(suited) score+=0.06;
-    return Math.min(Math.max(score,0.05),0.95);
+    if(pair) score=0.5+hi*0.028;
+    else if(hi===14) score=0.55+lo*0.018;
+    else if(hi>=12) score=0.38+lo*0.014;
+    else score=0.18+(hi+lo)*0.012-(gap*0.025);
+    if(suited) score+=0.07;
+    if(hi>=12&&lo>=10) score+=0.08;
+    return Math.min(Math.max(score,0.05),0.98);
   }
   const h=bestHand(oppHand,community);
-  // rank 0-8 → 0.0-1.0, но нелинейно
-  const map=[0.08,0.22,0.42,0.58,0.72,0.82,0.90,0.96,1.0];
-  return map[h.rank]||0.1;
+  return [0.10,0.28,0.48,0.64,0.76,0.86,0.93,0.97,1.0][h.rank]||0.1;
+}
+
+// --- Дро-потенциал ---
+function evalDrawStrength(){
+  if(community.length<3) return 0;
+  const all=[...oppHand,...community];
+  const suits={};const vals=[];
+  for(const c of all){suits[c.suit]=(suits[c.suit]||0)+1;vals.push(rankVal(c.rank));}
+  const flushDraw=Object.values(suits).some(n=>n===4);
+  const sv=[...new Set(vals)].sort((a,b)=>a-b);
+  let sDraw=false;
+  for(let i=0;i<sv.length-3;i++) if(sv[i+3]-sv[i]<=4) sDraw=true;
+  return (flushDraw?0.18:0)+(sDraw?0.14:0);
+}
+
+// --- Читаем стиль игрока ---
+function getPlayerProfile(){
+  const hands=Math.max(playerModel.totalHands,1);
+  const raiseRate=playerModel.totalRaises/Math.max(hands*3,1); // раз в среднем на руку
+  const foldRate=playerModel.totalFolds/Math.max(hands,1);
+  const aggression=playerModel.aggressionCount>0
+    ?playerModel.aggressionSum/playerModel.aggressionCount:0.3;
+
+  // isLoose: часто рейзит — скорее всего блефует
+  const isLoose=raiseRate>0.5||aggression>0.6;
+  // isTight: редко рейзит — ставит только с рукой
+  const isTight=raiseRate<0.15&&foldRate>0.3;
+  // isPassive: редко рейзит, много чеков
+  const isPassive=raiseRate<0.2&&aggression<0.25;
+  // isAggressive: много рейзов и большие ставки
+  const isAggressive=raiseRate>0.4&&aggression>0.5;
+
+  return{isLoose,isTight,isPassive,isAggressive,raiseRate,foldRate,aggression};
+}
+
+// --- Оценка вероятной силы руки игрока по его действиям ---
+function estimatePlayerHandStrength(){
+  const actions=playerModel.roundActions;
+  if(actions.length===0) return 0.4; // неизвестно — среднее
+  let estimate=0.4;
+  for(const a of actions){
+    if(a.type==='raise'){
+      const betRatio=a.amount/Math.max(pot,0.01);
+      estimate+=betRatio*0.3; // большая ставка = сильнее рука (или блеф)
+    }
+    if(a.type==='check') estimate-=0.05;
+    if(a.type==='call') estimate+=0.05;
+  }
+  // Корректируем на профиль: если игрок рыхлый — его рейзы менее значимы
+  const profile=getPlayerProfile();
+  if(profile.isLoose) estimate*=0.75; // скидываем оценку — он блефует часто
+  if(profile.isTight) estimate*=1.25; // повышаем — он ставит только с рукой
+  return Math.min(Math.max(estimate,0.05),0.95);
+}
+
+// --- Блеф-кэтч: стоит ли звать потенциальный блеф ---
+function shouldBluffCatch(toCall){
+  const profile=getPlayerProfile();
+  if(!profile.isLoose&&!profile.isAggressive) return false;
+  const potOdds=pot/(pot+toCall);
+  // Если игрок часто блефует И пот-оддсы нормальные — звоним
+  const bluffFreq=profile.isLoose?0.4:profile.isAggressive?0.3:0.15;
+  return potOdds>0.3&&bluffFreq>0.25&&Math.random()<bluffFreq;
+}
+
+// --- Позиционный бонус ---
+function positionBonus(){
+  // Игрок ходит первым (SB) — у оппа позиция
+  // В покере позиция = информация = преимущество ~0.05-0.1
+  return 0.07;
+}
+
+// --- Запись действия игрока ---
+function recordPlayerAction(type,amount){
+  playerModel.roundActions.push({type,amount:amount||0,phase,pot});
+  if(type==='raise'){
+    playerModel.totalRaises++;
+    if(phase==='preflop') playerModel.preflopRaiseRate=
+      (playerModel.preflopRaiseRate*playerModel.totalHands+1)/(playerModel.totalHands+1);
+    const ratio=(amount||0)/Math.max(pot,0.01);
+    playerModel.aggressionSum+=ratio;
+    playerModel.aggressionCount++;
+  }
+  if(type==='fold') playerModel.totalFolds++;
 }
 
 function oppPotOdds(){
-  // шанс колла: насколько выгодно по размеру банка
   const toCall=Math.max(0,playerBet-oppBet);
   if(toCall<=0) return 1;
   return pot/(pot+toCall);
 }
 
+// --- Главная функция решения ---
 async function oppThink(){
   setOppStatus(thinkingDots());
-  // думает дольше при сложных решениях
-  await sleep(600+Math.random()*1000);
+  // Думает дольше при сложных ситуациях
+  await sleep(800+Math.random()*1100);
 
-  const str=evalOppHandStrength();
-  const potOdds=oppPotOdds();
+  const myStr=evalOppHandStrength();
+  const drawBonus=evalDrawStrength();
+  const posBonus=positionBonus();
+  const totalStr=Math.min(myStr+drawBonus+posBonus,1.0);
+
   const toCall=parseFloat(Math.max(0,playerBet-oppBet).toFixed(2));
-  const isBluffChance=Math.random()<0.15; // 15% шанс блефа
-  const effectiveStr=isBluffChance?Math.min(str+0.35,1):str;
+  const stackRatio=toCall/Math.max(oppChips,0.01);
+  const potOdds=oppPotOdds();
   const r=Math.random();
 
-  // СИЛЬНАЯ РУКА (str > 0.65)
-  if(effectiveStr>0.65){
-    if(r<0.55&&oppChips>=currentBet){
-      // рейз
-      const mult=str>0.85?2.5:1.8;
-      const amt=parseFloat(Math.min(currentBet*mult,oppChips).toFixed(2));
-      setOppStatus('Raise '+fmt(amt));await sleep(300);
-      return{action:'raise',amount:Math.max(amt,0.05)};
-    }else{
-      // колл или чек
-      if(toCall>0&&toCall<=oppChips){
-        setOppStatus('Call '+fmt(toCall));await sleep(250);
-        return{action:'call',amount:toCall};
-      }
-      setOppStatus('Check');await sleep(200);return 'check';
-    }
-  }
+  // Читаем противника
+  const profile=getPlayerProfile();
+  const playerEstimate=estimatePlayerHandStrength();
 
-  // СРЕДНЯЯ РУКА (0.35 – 0.65)
-  if(effectiveStr>0.35){
+  // Если игрок скорее блефует — снижаем порог колла
+  const bluffCatch=toCall>0&&shouldBluffCatch(toCall);
+
+  // Блеф от ИИ: реже если игрок tight (он не фолдит плохие руки)
+  const bluffChance=profile.isTight?0.06:profile.isLoose?0.18:0.12;
+  const isBluffing=Math.random()<bluffChance;
+  const effectiveStr=isBluffing?Math.min(totalStr+0.4,1):totalStr;
+
+  // Насколько рука противника сильнее нашей по оценке
+  const weAhead=totalStr>playerEstimate+0.1;
+  const weBehind=playerEstimate>totalStr+0.15;
+
+  // ============ РЕШЕНИЕ ============
+
+  // СИЛЬНАЯ РУКА — агрессивно, не фолдим
+  if(effectiveStr>0.65||bluffCatch){
     if(toCall>0){
-      // колл если пот-оддсы выгодные
-      if(potOdds>0.3&&toCall<=oppChips){
-        setOppStatus('Call '+fmt(toCall));await sleep(250);
-        return{action:'call',amount:toCall};
-      }else{
-        // фолд если слишком дорого
-        setOppStatus('Fold');await sleep(350);return 'fold';
+      // Ре-рейз если мы явно впереди и не ривер
+      if(weAhead&&r<0.4&&oppChips>=currentBet*1.5&&phase!=='river'){
+        const mult=totalStr>0.85?2.5:1.6;
+        const amt=parseFloat(Math.min(currentBet*mult,oppChips).toFixed(2));
+        setOppStatus('Raise '+fmt(amt));await sleep(400);
+        return{action:'raise',amount:Math.max(amt,0.05)};
       }
+      if(toCall<=oppChips){
+        setOppStatus('Call '+fmt(toCall));await sleep(300);
+        return{action:'call',amount:toCall};
+      }
+      setOppStatus('All-in! '+fmt(oppChips));await sleep(500);
+      return{action:'call',amount:oppChips};
     }else{
-      // без ставки — иногда рейзим, иногда чек
-      if(r<0.25&&oppChips>=currentBet){
-        const amt=parseFloat(Math.min(currentBet,oppChips).toFixed(2));
-        setOppStatus('Raise '+fmt(amt));await sleep(300);
-        return{action:'raise',amount:amt};
+      // Нет ставки — ставим сами, размер зависит от силы
+      if(r<0.72&&oppChips>=currentBet){
+        const mult=totalStr>0.85?2.2:weBehind?0.8:1.4;
+        const amt=parseFloat(Math.min(currentBet*mult,oppChips).toFixed(2));
+        setOppStatus('Bet '+fmt(amt));await sleep(350);
+        return{action:'raise',amount:Math.max(amt,0.05)};
+      }
+      // Медленная игра с монстром иногда
+      if(totalStr>0.85&&r<0.25){
+        setOppStatus('Check');await sleep(300);return 'check';
       }
       setOppStatus('Check');await sleep(200);return 'check';
     }
   }
 
-  // СЛАБАЯ РУКА (< 0.35)
+  // СРЕДНЯЯ РУКА
+  if(effectiveStr>0.38){
+    if(toCall>0){
+      // Фолд только при огромной ставке + мы явно позади + нет дро
+      if(stackRatio>0.7&&weBehind&&drawBonus<0.08&&!bluffCatch){
+        setOppStatus('Fold');await sleep(500);return 'fold';
+      }
+      // Если игрок tight и ставит много — он имеет руку, фолдим средние
+      if(profile.isTight&&stackRatio>0.5&&totalStr<0.55){
+        setOppStatus('Fold');await sleep(450);return 'fold';
+      }
+      if(toCall<=oppChips){
+        setOppStatus('Call '+fmt(toCall));await sleep(300);
+        return{action:'call',amount:toCall};
+      }
+      setOppStatus('All-in! '+fmt(oppChips));await sleep(500);
+      return{action:'call',amount:oppChips};
+    }else{
+      // Без ставки — иногда бетим особенно если игрок пассивный
+      const betChance=profile.isPassive?0.5:0.3;
+      if(r<betChance&&oppChips>=currentBet){
+        const amt=parseFloat(Math.min(currentBet*(1+r),oppChips).toFixed(2));
+        setOppStatus('Bet '+fmt(amt));await sleep(300);
+        return{action:'raise',amount:Math.max(amt,0.05)};
+      }
+      setOppStatus('Check');await sleep(200);return 'check';
+    }
+  }
+
+  // СЛАБАЯ РУКА
   if(toCall>0){
-    // блеф-рейз иногда при слабой руке
-    if(isBluffChance&&r<0.3&&oppChips>=currentBet*1.5){
-      const amt=parseFloat(Math.min(currentBet*1.5,oppChips).toFixed(2));
-      setOppStatus('Raise '+fmt(amt));await sleep(400);
+    // Блеф-рейз — чаще если игрок tight (он фолдит)
+    const bluffRaiseChance=profile.isTight?0.35:profile.isLoose?0.08:0.18;
+    if(isBluffing&&r<bluffRaiseChance&&oppChips>=currentBet*1.5&&community.length<5){
+      const amt=parseFloat(Math.min(currentBet*2,oppChips).toFixed(2));
+      setOppStatus('Raise '+fmt(amt));await sleep(600);
       return{action:'raise',amount:amt};
     }
-    // фолд если ставка большая, иначе иногда колл
-    if(toCall/pot>0.45){
-      setOppStatus('Fold');await sleep(350);return 'fold';
-    }else if(r<0.35&&toCall<=oppChips){
-      setOppStatus('Call '+fmt(toCall));await sleep(250);
-      return{action:'call',amount:toCall};
-    }else{
-      setOppStatus('Fold');await sleep(350);return 'fold';
+    // Колл с хорошими пот-оддсами или дро
+    if((potOdds>0.45&&stackRatio<0.25)||(drawBonus>0.12&&stackRatio<0.45)){
+      if(toCall<=oppChips){
+        setOppStatus('Call '+fmt(toCall));await sleep(350);
+        return{action:'call',amount:toCall};
+      }
     }
+    setOppStatus('Fold');await sleep(450);return 'fold';
   }else{
-    // без ставки — чек или редкий блеф
-    if(r<0.18&&oppChips>=currentBet){
-      const amt=parseFloat(Math.min(currentBet,oppChips).toFixed(2));
-      setOppStatus('Raise '+fmt(amt));await sleep(400);
+    // Без ставки — блефуем чаще против пассивных игроков
+    const bluffBetChance=profile.isPassive?0.38:profile.isTight?0.28:0.18;
+    if(r<bluffBetChance&&oppChips>=currentBet){
+      const amt=parseFloat(Math.min(currentBet*1.5,oppChips).toFixed(2));
+      setOppStatus('Bluff '+fmt(amt));await sleep(600);
       return{action:'raise',amount:amt};
     }
     setOppStatus('Check');await sleep(200);return 'check';
@@ -771,6 +913,7 @@ function startGame(){
   document.getElementById('opp-char-img').src=ch.img;
   document.getElementById('opp-name').textContent=ch.name;
   playerChips=1.00;oppChips=1.00;roundNum=1;
+  playerModel={totalRaises:0,totalFolds:0,totalHands:0,bluffsCaught:0,bigBetWins:0,bigBetLoses:0,preflopRaiseRate:0,aggressionSum:0,aggressionCount:0,roundActions:[]};
   // Запускаем музыку
   const music=document.getElementById('bg-music');
   music.volume=0.4;
@@ -783,6 +926,8 @@ async function newRound(){
   gameActive=true;inputLocked=true;
   pot=0;oppBet=0;playerBet=0;community=[];
   phase='preflop';
+  playerModel.roundActions=[];
+  playerModel.totalHands++;
   document.getElementById('round-display').textContent=roundNum;
   document.getElementById('result-overlay').classList.remove('show');
   deck=shuffle(makeDeck());
@@ -809,6 +954,7 @@ async function playerAction(action){
   inputLocked=true;lockActions(true);
 
   if(action==='fold'){
+    recordPlayerAction('fold',0);
     oppChips=parseFloat((oppChips+pot).toFixed(2));pot=0;updateChips();
     showMsg('Вы сбросили карты 🂠',1600);
     await sleep(2000);
@@ -817,10 +963,12 @@ async function playerAction(action){
     return;
   }
   if(action==='check'){
+    recordPlayerAction('check',0);
     if(oppBet>playerBet){inputLocked=false;lockActions(false);return;}
   }
   if(action==='call'){
     const amt=parseFloat(Math.min(oppBet-playerBet,playerChips).toFixed(2));
+    recordPlayerAction('call',amt);
     playerChips=parseFloat((playerChips-amt).toFixed(2));
     pot=parseFloat((pot+amt).toFixed(2));
     playerBet=parseFloat((playerBet+amt).toFixed(2));
@@ -828,6 +976,7 @@ async function playerAction(action){
   }
   if(action==='raise'){
     const amt=parseFloat(Math.min(currentBet,playerChips).toFixed(2));
+    recordPlayerAction('raise',amt);
     playerChips=parseFloat((playerChips-amt).toFixed(2));
     pot=parseFloat((pot+amt).toFixed(2));
     playerBet=parseFloat((playerBet+amt).toFixed(2));
