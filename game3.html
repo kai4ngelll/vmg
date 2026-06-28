@@ -27,7 +27,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Inter',sans-serif;-webkit
 @keyframes loadfill{0%{width:0%}100%{width:100%}}
 
 /* ===== START SCREEN ===== */
-#start-screen{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 20px;background:radial-gradient(ellipse at 50% 15%,rgba(192,57,43,0.2) 0%,transparent 65%),linear-gradient(180deg,#0a0a12 0%,#050508 100%);}
+#start-screen{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 20px;height:100%;height:100dvh;background:radial-gradient(ellipse at 50% 15%,rgba(192,57,43,0.2) 0%,transparent 65%),linear-gradient(180deg,#0a0a12 0%,#050508 100%);}
 #start-screen.hidden{display:none;}
 .start-eyebrow{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.4em;color:var(--t3);text-transform:uppercase;margin-bottom:6px;}
 .start-title{font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:0.06em;color:#fff;text-shadow:0 0 50px rgba(192,57,43,0.5);text-align:center;line-height:0.95;}
@@ -89,7 +89,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Inter',sans-serif;-webkit
 .community-cards{display:flex;gap:7px;justify-content:center;margin-top:8px;}
 
 /* GAME MSG — positioned relative to community area */
-.game-msg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(7,7,12,0.96);border:1.5px solid rgba(192,57,43,0.5);border-radius:14px;padding:14px 28px;font-family:'Bebas Neue',sans-serif;font-size:22px;color:#fff;text-align:center;opacity:0;pointer-events:none;transition:opacity 0.4s;white-space:nowrap;z-index:5;box-shadow:0 0 40px rgba(192,57,43,0.25);letter-spacing:0.05em;}
+.game-msg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(7,7,12,0.96);border:1.5px solid rgba(192,57,43,0.5);border-radius:14px;padding:12px 18px;font-family:'Bebas Neue',sans-serif;font-size:18px;color:#fff;text-align:center;opacity:0;pointer-events:none;transition:opacity 0.4s;white-space:normal;word-break:break-word;max-width:90%;width:max-content;max-width:calc(100vw - 32px);z-index:5;box-shadow:0 0 40px rgba(192,57,43,0.25);letter-spacing:0.05em;}
 .game-msg.show{opacity:1;}
 
 /* DIVIDER */
@@ -321,7 +321,8 @@ body{background:var(--bg);color:var(--t1);font-family:'Inter',sans-serif;-webkit
 })();
 </script>
 
-<!-- ЗАГРУЗКА -->
+<!-- МУЗЫКА -->
+<audio id="bg-music" src="song4.mp3" loop preload="auto"></audio>
 <div id="load-screen">
   <div>
     <div class="load-title">VIPERR <span>GAME</span></div>
@@ -352,6 +353,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Inter',sans-serif;-webkit
     </div>
   </div>
   <button class="start-btn" id="start-btn" onclick="startGame()" disabled>♠ Начать игру ♠</button>
+  <button onclick="location.href='index.html'" style="margin-top:12px;background:transparent;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:12px;color:rgba(255,255,255,0.35);font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.25em;cursor:pointer;width:100%;max-width:340px;">ВЫЙТИ</button>
 </div>
 
 <!-- ИГРА -->
@@ -368,6 +370,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Inter',sans-serif;-webkit
     <div class="round-info">
       <div class="round-label">Раунд</div>
       <div class="round-val" id="round-display">1</div>
+      <button onclick="location.href='index.html'" style="margin-top:4px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:3px 8px;color:rgba(255,255,255,0.45);font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.15em;cursor:pointer;">ВЫЙТИ</button>
     </div>
   </div>
 
@@ -466,9 +469,9 @@ body{background:var(--bg);color:var(--t1);font-family:'Inter',sans-serif;-webkit
 </div>
 
 <script>
-// IMAGES - Каенжел везде
+// IMAGES
 const KAI_SRC = 'kai.png';
-const NAIN_SRC = 'kai.png';
+const NAIN_SRC = 'nain.png';
 
 document.getElementById('img-kai').src = KAI_SRC;
 document.getElementById('img-nain').src = NAIN_SRC;
@@ -768,6 +771,11 @@ function startGame(){
   document.getElementById('opp-char-img').src=ch.img;
   document.getElementById('opp-name').textContent=ch.name;
   playerChips=1.00;oppChips=1.00;roundNum=1;
+  // Запускаем музыку
+  const music=document.getElementById('bg-music');
+  music.volume=0.4;
+  music.currentTime=0;
+  music.play().catch(()=>{});
   newRound();
 }
 
@@ -861,6 +869,16 @@ async function advancePhase(){
   else{phase='showdown';await doShowdown();return;}
   oppBet=0;playerBet=0;currentBet=0.05;
   updatePhaseLabel();renderCommunity();updateHandHint();
+
+  // Если кто-то в олл-ин — автоматически раскладываем все карты без остановок
+  const anyAllIn = playerChips<=0 || oppChips<=0;
+  if(anyAllIn){
+    showMsg(phase==='flop'?'🃏 Флоп':phase==='turn'?'🃏 Тёрн':'🃏 Ривер',900);
+    await sleep(1200);
+    await advancePhase(); // сразу следующая фаза
+    return;
+  }
+
   showMsg(phase==='flop'?'🃏 Флоп':phase==='turn'?'🃏 Тёрн':'🃏 Ривер',1200);
   await sleep(1600);
   inputLocked=false;lockActions(false);updateActionBtns();
@@ -900,10 +918,11 @@ async function doShowdown(){
 async function endHand(winner,pHandName,oHandName){
   inputLocked=false;gameActive=false;
   await sleep(300);
-  if(oppChips<0.05&&winner==='player'||(winner==='player'&&oppChips<=0)){
+  // Проверяем закончились ли фишки у кого-то
+  if(oppChips<=0.01){
     await endGame('player',pHandName);return;
   }
-  if(playerChips<0.05&&winner==='opp'||(winner==='opp'&&playerChips<=0)){
+  if(playerChips<=0.01){
     await endGame('opp',oHandName);return;
   }
   if(winner==='tie'&&playerChips<0.05&&oppChips<0.05){await endGame('tie','');return;}
@@ -911,8 +930,8 @@ async function endHand(winner,pHandName,oHandName){
 }
 
 async function checkGameOver(reason){
-  if(oppChips<0.05){await endGame('player','');return;}
-  if(playerChips<0.05){await endGame('opp','');return;}
+  if(oppChips<=0.01){await endGame('player','');return;}
+  if(playerChips<=0.01){await endGame('opp','');return;}
   roundNum++;await sleep(500);newRound();
 }
 
@@ -973,6 +992,7 @@ function goToStart(){
   document.getElementById('result-overlay').classList.remove('show');
   document.getElementById('game-screen').classList.add('hidden');
   document.getElementById('start-screen').classList.remove('hidden');
+  document.getElementById('bg-music').pause();
   selectedChar=null;
   document.querySelectorAll('.char-card').forEach(c=>c.classList.remove('selected'));
   document.getElementById('start-btn').disabled=true;
